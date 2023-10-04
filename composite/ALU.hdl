@@ -1,0 +1,89 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/02/ALU.hdl
+
+/**
+ * The ALU (Arithmetic Logic Unit).
+ * Computes one of the following functions:
+ * x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y,
+ * x+1, y+1, x-1, y-1, x&y, x|y on two 16-bit inputs, 
+ * according to 6 input bits denoted zx,nx,zy,ny,f,no.
+ * In addition, the ALU computes two 1-bit outputs:
+ * if the ALU output == 0, zr is set to 1; otherwise zr is set to 0;
+ * if the ALU output < 0, ng is set to 1; otherwise ng is set to 0.
+ */
+
+// Implementation: the ALU logic manipulates the x and y inputs
+// and operates on the resulting values, as follows:
+// if (zx == 1) set x = 0        // 16-bit constant
+// if (nx == 1) set x = !x       // bitwise not
+// if (zy == 1) set y = 0        // 16-bit constant
+// if (ny == 1) set y = !y       // bitwise not
+// if (f == 1)  set out = x + y  // integer 2's complement addition
+// if (f == 0)  set out = x & y  // bitwise and
+// if (no == 1) set out = !out   // bitwise not
+// if (out == 0) set zr = 1
+// if (out < 0) set ng = 1
+
+CHIP ALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        zx, // zero the x input?
+        nx, // negate the x input?
+        zy, // zero the y input?
+        ny, // negate the y input?
+        f,  // compute out = x + y (if 1) or x & y (if 0)
+        no; // negate the out output?
+
+    OUT 
+        out[16], // 16-bit output
+        zr, // 1 if (out == 0), 0 otherwise
+        ng; // 1 if (out < 0),  0 otherwise
+
+    PARTS:
+
+    // Flatline x
+    Mux16(a=x,b=false,sel=zx,out=x1);
+
+    // Negate x
+    Not16(in=x1,out=x2);
+
+    // Flatline y
+    Mux16(a=y,b=false,sel=zy,out=y1);
+
+    // Negate y
+    Not16(in=y1,out=y2);
+
+    // Select x,y moving forward
+    Mux16(a=x1,b=x2,sel=nx,out=x3);
+    Mux16(a=y1,b=y2,sel=ny,out=y3);
+
+    // Get addition and bitwise
+    Add16(a=x3,b=y3,out=addition);
+    And16(a=x3,b=y3,out=bitwise);
+
+    // Choose final going forward
+    Mux16(a=bitwise,b=addition,sel=f,out=finalStd);
+
+    // Negate t1
+    Not16(in=finalStd,out=finalNegate);
+
+    // Final
+    // Bit 15 will be 1 if the value is on the higher half of the value range, meaning it's negative
+    // Split into two 8 bit buffer to do two 8 way OR gates
+    Mux16(a=finalStd,b=finalNegate,sel=no,out[15]=ng,out[0..7]=finalLo,out[8..15]=finalHi,out=out);
+    
+    // Set zr
+    Or8Way(in=finalLo,out=lowCheck);
+    Or8Way(in=finalHi,out=highCheck);
+    Or(a=lowCheck,b=highCheck,out=zeroCheck);
+
+    // Negate it bc 1 will mean [out] is zero, but the or above will return 0
+    Not(in=zeroCheck,out=zr);
+
+    // Set zr
+    //And(a=zx,b=zy,out=bothAlwaysZero);
+    //And16(a=final,b=false,out=finalZeroCheck);
+    
+}
