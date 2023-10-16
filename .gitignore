@@ -1,5 +1,7 @@
 
 assembler/.vs/
+assembler/bin/
+assembler/bin-int/
 
 **.sln
 **.vcxproj

@@ -7,8 +7,10 @@
 #include <unordered_map>
 #include <bitset>
 
-static const std::unordered_map<std::string, hins> gSymbols{};
-static const std::unordered_map<std::string, hins> gDefaultSymbols
+// TODO: Labels only work if they show up before they are referenced
+// Add a reverse replacement or have 2 passes
+
+static std::unordered_map<std::string, hline> gSymbols
 {
 	// Registers
 	{"R0",		0},
@@ -37,7 +39,6 @@ static const std::unordered_map<std::string, hins> gDefaultSymbols
 	{"THIS",	3},
 	{"THAT",	4},
 };
-
 static const std::unordered_map<std::string, hins> gStatements
 {
 	{"0",	0b0101010},
@@ -80,7 +81,6 @@ static const std::unordered_map<std::string, hins> gStatements
 	{"D|M", 0b1010101}
 
 };
-
 static const std::unordered_map<std::string, hins> gJumps
 {
 	{"JGT", 0b001},
@@ -92,31 +92,55 @@ static const std::unordered_map<std::string, hins> gJumps
 	{"JMP", 0b111},
 };
 
-line_state FormatLine(std::string& line)
+static std::unordered_map<std::string, std::vector<hachar>> gLabelReplacements{};
+
+line_state FormatLine(std::string& line, uint16_t& lnum)
 {
 	line_state state{};
 	bool isComment{ false };
 	bool commentInit{ false };
+
+	char* startChar{ nullptr };
+	char* endChar{ nullptr };
+
 	line.erase(std::remove_if(line.begin(), line.end(),
 		[&](char& c)
 		{
-			if (c == '/')
+			if (!isComment)
 			{
-				if (commentInit)
+				if (c == '/')
 				{
 					isComment = true;
-					state.hasErrors = false;
+					//if (commentInit)
+					//{
+						//isComment = true;
+						//state.hasErrors = false;
+					//}
+					//commentInit = true;
+					//state.hasErrors = true;
 				}
-				commentInit = true;
-				state.hasErrors = true;
+				else if (c == ';')
+					state.hasJump = true;
+				else if (c == '=')
+					state.hasDestination = true;
+				else if (c == '(')
+				{
+					state.isLabel = true;
+					startChar = &c;
+				}
+				else if (c == ')')
+					endChar = &c;
 			}
-			else if (c == ';')
-				state.hasJump = true;
-			else if (c == '=')
-				state.hasDestination = true;
 			return ((c == ' ') || isComment);
 		}),
 		line.end());
+
+	if (startChar != nullptr && endChar != nullptr)
+	{
+		std::string index{ startChar + 1, endChar };
+		gSymbols[index] = lnum;
+	}
+
 	return state;
 }
 
@@ -125,14 +149,31 @@ void SetInstructionTypeBit(hins& instruction, std::string& line)
 	instruction |= (((line[0] != '@') & 1U) << 15);
 }
 
-hins BuildInstruction(std::string& line, const line_state& state)
+bool IsNumber(std::string& str)
+{
+	return std::all_of(str.begin(), str.end(), ::isdigit);
+}
+
+hins BuildInstruction(std::string& line, const line_state& state, uint16_t& lnum, hachar fileposition)
 {
 	hins instruction{ 0 };
 	SetInstructionTypeBit(instruction, line);
 	if (line[0] == '@')
 	{
 		std::string strnum{ line.begin() + 1, line.end() };
-		int32_t num{ std::stoi(strnum) };
+		int32_t num{ 0 };
+		if (IsNumber(strnum))
+		{
+			num = std::stoi(strnum);
+		}
+		else if (gSymbols.contains(strnum))
+		{
+			num = gSymbols.at(strnum);
+		}
+		else
+		{
+			gLabelReplacements[strnum].push_back(fileposition);
+		}
 		instruction |= (num & 0b0111111111111111); // 15 bitmask
 	}
 	else
@@ -143,7 +184,6 @@ hins BuildInstruction(std::string& line, const line_state& state)
 		// Destination
 		if (state.hasDestination)
 		{
-			std::cout << "Line has destination\n";
 			if (cursor < line.length())
 			{
 				char c{ line[cursor] };
@@ -165,31 +205,43 @@ hins BuildInstruction(std::string& line, const line_state& state)
 
 		// Statement
 		{
-			std::cout << "Finding statement\n";
 			std::string statement{};
 			char& c{ line[cursor] };
 			while ((c != ';') && (cursor < line.length()))
 			{
-				c = line[cursor];
 				statement += c;
 				cursor++;
+				c = line[cursor];
 			}
-			std::cout << "Statement: " << statement << "\n";
+			cursor++;
 			if (gStatements.contains(statement))
+			{
 				instruction |= (gStatements.at(statement) << 6);
+			}
 		}
 
 		// Jump
 		if (state.hasJump)
 		{
-			std::cout << "Line has jump\n";
 			std::string jumpCode{ line.begin() + cursor, line.begin() + cursor + 3 }; // all jump codes are 3 length
-			std::cout << "Statement: " << jumpCode << "\n";
 			if (gJumps.contains(jumpCode))
 				instruction |= gJumps.at(jumpCode);
 		}
 	}
 	return instruction;
+}
+
+hins BuildReverseLabelInstruction(const std::string& label)
+{
+	hins instruction{ 0 };
+	int32_t num{ gSymbols.at(label) };
+	instruction |= (num & 0b0111111111111111); // 15 bitmask
+	return instruction;
+}
+
+void WriteInstruction(hins& instruction, std::ofstream& file)
+{
+	file << std::bitset<16>(instruction).to_string() << std::endl;
 }
 
 int NANDHackAssembleFile(const std::filesystem::path& filepath)
@@ -204,13 +256,31 @@ int NANDHackAssembleFile(const std::filesystem::path& filepath)
 
 		std::string line{};
 
+		uint16_t linecount{ 0 };
 		while (std::getline(inFile, line))
 		{
-			line_state state{ FormatLine(line) };
-			if (!line.empty() && !state.hasErrors)
+			line_state state{ FormatLine(line, linecount) };
+			if (!line.empty())
 			{
-				hins instruction{ BuildInstruction(line, state) };
-				outFile << std::bitset<16>(instruction).to_string() << std::endl;
+				if (!state.isLabel)
+				{
+					hachar linePosition{ static_cast<hachar>(outFile.tellp()) };
+					hins instruction{ BuildInstruction(line, state, linecount, linePosition) };
+					WriteInstruction(instruction, outFile);
+					linecount++;
+				}
+			}
+		}
+
+		// Fill in missing labels
+		for (const std::pair<std::string, std::vector<hachar>>& pair : gLabelReplacements)
+		{
+			for (const hachar& lc : pair.second)
+			{
+				//std::cout << lc << std::endl;
+				outFile.seekp(lc);
+				hins instruction{ BuildReverseLabelInstruction(pair.first) };
+				WriteInstruction(instruction, outFile);
 			}
 		}
 
@@ -221,5 +291,5 @@ int NANDHackAssembleFile(const std::filesystem::path& filepath)
 	{
 		std::cout << "File extension must be *.asm\n";
 	}
-	return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
