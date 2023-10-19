@@ -46,7 +46,7 @@ hcmds GetCommandSet(std::string& line)
 
 std::string BuildAssembly(hcmds& commands)
 {
-	std::string assembly{};
+	std::string cmd;
 
 	// Commands of size 1 are executions
 	// Commands of size 3 are pop/push, etc...
@@ -56,20 +56,39 @@ std::string BuildAssembly(hcmds& commands)
 	}
 	else
 	{
-		if (commands.at(1) == "constant")
+		const std::string& location{ commands.at(1) };
+		const std::string& offset{ commands.at(2) };
+		if (commands.at(0) == "push")
 		{
-			vmins cmd{ ToConstant(commands.at(2)) + D_Address() + StackInto() + StackIncrement()};
-			std::cout << cmd;
+			if (location == "constant")
+			{
+				cmd = ToConstant(offset) + D_Address();
+			}
+			else if (location == "local")
+			{
+				cmd = ToLocal(offset) + D_Memory();
+			}
+			cmd += StackInto() + StackIncrement();
+			std::cout << cmd << "\n";
 		}
-
-		//if (commands.at(1) == "constant")
-		//{
-		//	//std::format("@{}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n", commands.at(2));
-		//	//std::cout << std::format("@{}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n", commands.at(2));
-		//}
+		else if(commands.at(0) == "pop")
+		{
+			// Pop with no temps
+			// void (int* x, int* y)
+			//		*x = *x + *y;
+			//		*y = *x - *y;
+			//		*x = *x - *y;
+			//
+			cmd = StackDecrement() + StackFrom() + ToTemp(0) + M_Data();
+			if (location == "local")
+			{
+				cmd += ToLocalBase() + "D=D+M\n@" + offset + "\nD=D+A\n";
+			}
+			cmd += ToStack() + A_Memory() + A_Memory() + "A=D-A\nM=D-A\n";
+		}
 	}
 
-	return assembly;
+	return cmd;
 }
 
 void WriteLineToFile(std::ofstream& file, const std::string& str) { file << str << "\n"; }
@@ -89,7 +108,9 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 			hcmds commands{ GetCommandSet(line) };
 			if (!commands.empty())
 			{
+				WriteLineToFile(outFile, ("// " + line));
 				std::string assembly{ BuildAssembly(commands) };
+				WriteLineToFile(outFile, assembly);
 			}
 		}
 
