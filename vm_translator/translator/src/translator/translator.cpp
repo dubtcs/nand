@@ -1,5 +1,6 @@
 
 #include "translator.h"
+#include "haclus.h"
 
 #include <fstream>
 #include <unordered_map>
@@ -45,6 +46,8 @@ hcmds GetCommandSet(std::string& line)
 
 std::string BuildAssembly(hcmds& commands)
 {
+	std::string assembly{};
+
 	// Commands of size 1 are executions
 	// Commands of size 3 are pop/push, etc...
 	if (commands.size() == 1)
@@ -53,10 +56,20 @@ std::string BuildAssembly(hcmds& commands)
 	}
 	else
 	{
+		if (commands.at(1) == "constant")
+		{
+			vmins cmd{ ToConstant(commands.at(2)) + D_Address() + StackInto() + StackIncrement()};
+			std::cout << cmd;
+		}
 
+		//if (commands.at(1) == "constant")
+		//{
+		//	//std::format("@{}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n", commands.at(2));
+		//	//std::cout << std::format("@{}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n", commands.at(2));
+		//}
 	}
 
-	return {};
+	return assembly;
 }
 
 void WriteLineToFile(std::ofstream& file, const std::string& str) { file << str << "\n"; }
