@@ -8,7 +8,7 @@ includes = {};
 -- workspace
 workspace "Translator"
     architecture "x64"
-    startproject "vmtranslator"
+    startproject "translator"
 
     configurations {
         "Debug",
@@ -16,7 +16,7 @@ workspace "Translator"
     }
 
     -- ENGINE PROJECT
-    project "vmtranslator"
+    project "translator"
         location "translator";
         kind "ConsoleApp";
         language "C++";
@@ -44,8 +44,10 @@ workspace "Translator"
         }
 
         filter "system:windows"
-            systemversion "latest";
-            filter "configurations:Debug"
+            systemversion "latest"
+
+        filter "configurations:Debug"
+            defines {"VMTRANS_DB"}
             runtime "Debug"
             symbols "On"
     
