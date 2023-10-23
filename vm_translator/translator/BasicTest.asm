@@ -164,7 +164,7 @@ M=M-1
 A=M
 D=M
 @5
-D=D+M
+D=D+A
 @6
 D=D+A
 @SP
@@ -188,7 +188,7 @@ M=M+1
 // push that 5
 @5
 D=A
-@ARG
+@THAT
 A=A+D
 D=M
 @SP
@@ -207,16 +207,16 @@ D=M
 A=M
 A=A-1
 D=D+M
-A=A-1
-M=D
 @SP
 M=M-1
+A=M-1
+M=D
 
 // push argument 1
 @1
 D=A
 @ARG
-A=A+D
+A=M+D
 D=M
 @SP
 A=M
@@ -234,15 +234,15 @@ D=M
 A=M
 A=A-1
 D=D-M
-A=A-1
-M=D
 @SP
 M=M-1
+A=M-1
+M=D
 
 // push this 6
 @6
 D=A
-@ARG
+@THIS
 A=A+D
 D=M
 @SP
@@ -254,7 +254,7 @@ M=M+1
 // push this 6
 @6
 D=A
-@ARG
+@THIS
 A=A+D
 D=M
 @SP
@@ -273,10 +273,10 @@ D=M
 A=M
 A=A-1
 D=D+M
-A=A-1
-M=D
 @SP
 M=M-1
+A=M-1
+M=D
 
 // sub
 @SP
@@ -288,10 +288,10 @@ D=M
 A=M
 A=A-1
 D=D-M
-A=A-1
-M=D
 @SP
 M=M-1
+A=M-1
+M=D
 
 // push temp 6
 @11
@@ -312,8 +312,8 @@ D=M
 A=M
 A=A-1
 D=D+M
-A=A-1
-M=D
 @SP
 M=M-1
+A=M-1
+M=D
 

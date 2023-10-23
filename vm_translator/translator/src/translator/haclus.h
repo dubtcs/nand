@@ -44,7 +44,9 @@ inline vmins ToStack()			{ return "@SP\n";	}
 inline vmins ToArgument()		{ return "@ARG\n";	}
 inline vmins ToThis()			{ return "@THIS\n"; }
 inline vmins ToThat()			{ return "@THAT\n"; }
+inline vmins ToTemp()			{ return "@5\n";	}
 inline vmins ToLocalBase()		{ return "@LCL\n";	}
+inline vmins ToStatic()			{ return "@16\n";	}
 
 // D register operations
 
@@ -72,6 +74,8 @@ vmins ToConstant(const vmins& address);	// Go to address of constant
 vmins ToLocal(const vmins& offset);		// Go to local address
 vmins ToArgument(const vmins& offset);
 vmins ToTemp(const int32_t& index);
+vmins ToThis(const vmins& offset);
+vmins ToThat(const vmins& offset);
 vmins ToStatic();						// Go to address of static variable
 
 // Arithmetic
@@ -80,3 +84,9 @@ vmins RAdd(cvmins& dest, cvmins& r1, cvmins& r2);
 vmins RAdd1(cvmins& dest, cvmins& r1);
 vmins RSubtract(cvmins& dest, cvmins& r1, cvmins& r2);
 vmins RSubtract1(cvmins& dest, cvmins& r1);
+vmins RAnd(cvmins& dest, cvmins& r1, cvmins& r2);
+vmins ROr(cvmins& dest, cvmins& r1, cvmins& r2);
+vmins RNegate(cvmins& r);
+vmins REqual(cvmins& r1, cvmins& r2);
+vmins RLessThan(cvmins& r1, cvmins& r2);
+vmins RGreaterThan(cvmins& r1, cvmins& r2);
