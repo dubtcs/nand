@@ -6,7 +6,7 @@
 int main(int argc, char* argv[])
 {
 #ifdef VMTRANS_DB
-	TranslateVMCode("BasicTest.vm");
+	TranslateVMCode("Stacktest.vm");
 #endif
 	if (argc == 2)
 	{
