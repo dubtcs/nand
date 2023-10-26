@@ -1,5 +1,5 @@
 
-#include "translator/translator.h"
+#include "translator/trn.h"
 
 #include <iostream>
 

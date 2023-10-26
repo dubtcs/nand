@@ -34,9 +34,10 @@ D=0
 (eqTrue_0)
 D=-1
 (eqSkip_0)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 17
@@ -75,9 +76,10 @@ D=0
 (eqTrue_1)
 D=-1
 (eqSkip_1)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 16
@@ -116,9 +118,10 @@ D=0
 (eqTrue_2)
 D=-1
 (eqSkip_2)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 892
@@ -157,9 +160,10 @@ D=0
 (ltTrue_3)
 D=-1
 (ltSkip_3)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 891
@@ -198,9 +202,10 @@ D=0
 (ltTrue_4)
 D=-1
 (ltSkip_4)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 891
@@ -239,9 +244,10 @@ D=0
 (ltTrue_5)
 D=-1
 (ltSkip_5)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 32767
@@ -280,9 +286,10 @@ D=0
 (gtTrue_6)
 D=-1
 (gtSkip_6)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 32766
@@ -321,9 +328,10 @@ D=0
 (gtTrue_7)
 D=-1
 (gtSkip_7)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 32766
@@ -362,9 +370,10 @@ D=0
 (gtTrue_8)
 D=-1
 (gtSkip_8)
+
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 57
@@ -405,8 +414,8 @@ A=M
 A=A-1
 D=D+M
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 112
@@ -429,8 +438,8 @@ A=M
 A=A-1
 D=D-M
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // neg
@@ -439,6 +448,10 @@ A=M
 A=A-1
 D=M
 D=-D
+M=D
+@SP
+AM=M-1
+A=A-1
 M=D
 
 // and
@@ -452,8 +465,8 @@ A=M
 A=A-1
 D=D&M
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // push constant 82
@@ -476,8 +489,8 @@ A=M
 A=A-1
 D=D|M
 @SP
-M=M-1
-A=M-1
+AM=M-1
+A=A-1
 M=D
 
 // not
@@ -486,5 +499,9 @@ A=M
 A=A-1
 D=M
 D=!D
+M=D
+@SP
+AM=M-1
+A=A-1
 M=D
 
