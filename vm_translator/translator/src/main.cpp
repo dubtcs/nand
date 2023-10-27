@@ -6,7 +6,8 @@
 int main(int argc, char* argv[])
 {
 #ifdef VMTRANS_DB
-	TranslateVMCode("Stacktest.vm");
+	TranslateVMCode("ignores/FibonacciSeries.vm");
+	//TranslateVMCode("ignores");
 #endif
 	if (argc == 2)
 	{

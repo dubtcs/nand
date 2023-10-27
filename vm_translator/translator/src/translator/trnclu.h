@@ -20,6 +20,10 @@
 
 #define H_PUSH ("push")
 #define H_POP ("pop")
+#define H_LABEL ("label")
+
+#define H_GOTO ("goto")
+#define H_IFGO ("if-goto")
 
 using vmins = std::string;
 

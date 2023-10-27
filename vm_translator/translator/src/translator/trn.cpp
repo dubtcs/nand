@@ -20,6 +20,13 @@
 // 256 - 2017	: Stack
 //
 
+//
+// Project 08
+// Loops
+// Functions
+// Branching
+//
+
 using charp = const char*;
 inline constexpr charp ToStack{ "@SP" };
 inline constexpr charp ToLocal{ "@LCL" };
@@ -43,6 +50,7 @@ static const std::unordered_map<std::string, std::function<vmins()>> gCommandIns
 
 static const std::unordered_map<std::string, std::function<vmins(const vmins& offset)>> gToInstructions{
 	{ H_CONST,	[](const vmins& offset) { return ("@" + offset); }},
+	{ H_LOCAL,	[](const vmins& offset) { return ToLocal; }},
 	{ H_TEMP,	[](const vmins& offset) { return ToTemp; }},
 	{ H_POINTER,[](const vmins& offset) { return ((offset == "0") ? "@3" : "@4"); }},
 	{ H_THIS,	[](const vmins& offset) { return ToThis; }},
@@ -68,7 +76,10 @@ vmcmds GetCommandSet(std::string& line)
 		}
 		else if (c == ' ')
 		{
-			commands.push_back(currentCommand);
+			if (!currentCommand.empty())
+			{
+				commands.push_back(currentCommand);
+			}
 			currentCommand = "";
 		}
 		else
@@ -81,7 +92,7 @@ vmcmds GetCommandSet(std::string& line)
 	{
 		commands.push_back(currentCommand);
 	}
-
+	
 	return commands;
 }
 
@@ -92,8 +103,7 @@ std::string BuildAssembly(vmcmds& commands)
 	if (commands.size() == 1)
 	{
 		cmd.Add(ToStack);
-		cmd.Add("A=M");
-		cmd.Add("A=A-1");
+		cmd.Add("A=M-1");
 		if ((command == "not") || (command == "neg"))
 		{
 			cmd.Add("D=M");
@@ -105,14 +115,34 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd.Add("A=A-1");
 			cmd.Add("D=M");
 			cmd.Add(ToStack);
-			cmd.Add("A=M");
-			cmd.Add("A=A-1");
+			cmd.Add("A=M-1");
 			cmd.Add(gCommandInstructions.at(command)());
 		}
 		cmd.Add(ToStack);
 		cmd.Add(((command == "not") || (command == "neg")) ? "A=M" : "AM=M-1");
 		cmd.Add("A=A-1");
 		cmd.Add("M=D");
+	}
+	else if (commands.size() == 2)
+	{
+		const vmins& location{ commands.at(1) };
+		if (command == H_LABEL)
+		{
+			cmd += "(" + location + ")";
+		}
+		else if (command == H_GOTO)
+		{
+			cmd += "@" + location;
+			cmd += "0;JMP";
+		}
+		else if (command == H_IFGO)
+		{
+			cmd += ToStack;
+			cmd += "AM=M-1";
+			cmd += "D=M";
+			cmd += "@" + location;
+			cmd += "D;JNE";
+		}
 	}
 	else
 	{
@@ -133,8 +163,13 @@ std::string BuildAssembly(vmcmds& commands)
 				}
 				else
 				{
-					cmd.Add("@" + offset);
-					cmd.Add("D=A");
+					if (offset != "0")
+					{
+						cmd.Add("@" + offset);
+						cmd.Add("D=A");
+					}
+					else
+						cmd.Add("D=0");
 					cmd.Add(gToInstructions.at(location)(offset));
 					cmd.Add(((location == H_STATIC) ? "A=D+A" : "A=M+D"));
 				}
@@ -152,18 +187,6 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd.Add("AM=M-1");
 			cmd.Add("D=M");
 			cmd.Add(gToInstructions.at(location)(offset));
-			/*if (location == H_POINTER)
-			{
-				cmd.Add("D=D+A");
-			}
-			else
-			{
-				if (location == H_TEMP || location == H_STATIC)
-					cmd.Add("D=D+A");
-				else
-					cmd.Add("D=D+M");
-				cmd.Add("D=D+A");
-			}*/
 			if (location != H_POINTER)
 			{
 				if (location == H_TEMP || location == H_STATIC)
@@ -180,7 +203,7 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd.Add("M=D-A");
 		}
 		else
-			std::cout << "Command: " << command << " not supported.\n";
+			std::cout << "Command: " << command << " not supported. [" << location << "]["<<offset<<"]\n";
 	}
 
 	return cmd.GetContent();
@@ -220,7 +243,7 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 			std::ofstream outFile{ outName };
 
 			TranslateVMFile(filepath, inFile, outFile);
-
+			
 			inFile.close();
 			outFile.close();
 			return EXIT_SUCCESS;
@@ -230,18 +253,22 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 			std::string outName{ filepath.filename().replace_extension(".asm").string() };
 			std::ofstream outFile{ outName };
 
-			for (const std::filesystem::path& fi : filepath)
+			WriteLineToFile(outFile, "// Translating directory");
+			for (const std::filesystem::path& fi : std::filesystem::recursive_directory_iterator(filepath))
 			{
+				std::cout << fi.string() << "\n";
 				if (fi.extension() == ".vm")
 				{
+					WriteLineToFile(outFile, "// FILE " + fi.string());
 					std::ifstream inFile{};
-					inFile.open(filepath.string());
-					TranslateVMFile(filepath, inFile, outFile);
+					inFile.open(fi.string());
+					TranslateVMFile(fi, inFile, outFile);
 					inFile.close();
 				}
 			}
 
 			outFile.close();
+			return EXIT_SUCCESS;
 		}
 	}
 	std::cout << "Incorrect file extension *" << filepath.extension().string() << " must be *.vm\n";
