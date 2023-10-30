@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <functional>
+#include <stack>
 
 //
 // Hack memory layout
@@ -31,8 +32,8 @@ using charp = const char*;
 inline constexpr charp ToStack{ "@SP" };
 inline constexpr charp ToLocal{ "@LCL" };
 inline constexpr charp ToArguments{ "@ARG" };
-inline constexpr charp ToThis{ "@THIS" };
-inline constexpr charp ToThat{ "@THAT" };
+inline constexpr charp ToThis{ "@3" };
+inline constexpr charp ToThat{ "@4" };
 inline constexpr charp ToTemp{ "@5" };
 inline constexpr charp ToStatic{ "@16" };
 
@@ -59,9 +60,82 @@ static const std::unordered_map<std::string, std::function<vmins(const vmins& of
 	{ H_STATIC,	[](const vmins& offset) { return ToStatic; }}
 };
 
-static const std::unordered_map<std::string, std::function<vmins(const vmins& offset)>> gPopSetDDA{
-
+static std::unordered_map<std::string, int32_t> gFunctions{
+	// used to keep track of function return amounts
 };
+
+//static std::stack<std::string> gCallStack{}; // this should only ever be size 1 so it could just be a string
+static std::string gCurrentFunction{};
+static int32_t gRetCount{ 0 };
+
+vmins GeneratePushCommand(const vmins& location, const vmins& offset)
+{
+	sform cmd{};
+	if (location == H_CONST)
+	{
+		cmd.Add("@" + offset);
+		cmd.Add("D=A");
+	}
+	else
+	{
+		if (location == H_TEMP)
+		{
+			cmd.Add("@" + std::to_string(5 + stoi(offset)));
+		}
+		else
+		{
+			if (location != H_POINTER)
+			{
+				if (offset != "0")
+				{
+					cmd.Add("@" + offset);
+					cmd.Add("D=A");
+				}
+				else
+					cmd.Add("D=0");
+				cmd.Add(gToInstructions.at(location)(offset));
+				cmd.Add(((location == H_STATIC) ? "A=D+A" : "A=D+M"));
+			}
+			else
+			{
+				cmd += gToInstructions.at(location)(offset);
+			}
+		}
+		cmd.Add("D=M");
+	}
+	cmd.Add(ToStack);
+	cmd.Add("A=M");
+	cmd.Add("M=D");
+	cmd.Add(ToStack);
+	cmd.Add("M=M+1");
+
+	return cmd.GetContent();
+}
+vmins GeneratePopCommand(const vmins& location, const vmins& offset)
+{
+	sform cmd{};
+
+	cmd.Add(ToStack);
+	cmd.Add("AM=M-1");
+	cmd.Add("D=M");
+	cmd.Add(gToInstructions.at(location)(offset));
+	if (location != H_POINTER)
+	{
+		if (location == H_TEMP || location == H_STATIC)
+			cmd.Add("D=D+A");
+		else
+			cmd.Add("D=D+M");
+		cmd.Add("@" + offset);
+	}
+	cmd.Add("D=D+A");
+	cmd.Add(ToStack);
+	cmd.Add("A=M");
+	cmd.Add("A=M");
+	cmd.Add("A=D-A");
+	cmd.Add("M=D-A");
+
+	return cmd.GetContent();
+}
 
 vmcmds GetCommandSet(std::string& line)
 {
@@ -102,26 +176,95 @@ std::string BuildAssembly(vmcmds& commands)
 	sform cmd{};
 	if (commands.size() == 1)
 	{
-		cmd.Add(ToStack);
-		cmd.Add("A=M-1");
-		if ((command == "not") || (command == "neg"))
+		if (command != H_RETURN)
 		{
-			cmd.Add("D=M");
-			cmd.Add((command == "not") ? "D=!D" : "D=-D");
+			cmd.Add(ToStack);
+			cmd.Add("A=M-1");
+			if ((command == "not") || (command == "neg"))
+			{
+				cmd.Add("D=M");
+				cmd.Add((command == "not") ? "D=!D" : "D=-D");
+				cmd.Add("M=D");
+			}
+			else
+			{
+				cmd.Add("A=A-1");
+				cmd.Add("D=M");
+				cmd.Add(ToStack);
+				cmd.Add("A=M-1");
+				cmd.Add(gCommandInstructions.at(command)());
+			}
+			cmd.Add(ToStack);
+			cmd.Add(((command == "not") || (command == "neg")) ? "A=M" : "AM=M-1");
+			cmd.Add("A=A-1");
 			cmd.Add("M=D");
 		}
 		else
 		{
-			cmd.Add("A=A-1");
-			cmd.Add("D=M");
-			cmd.Add(ToStack);
-			cmd.Add("A=M-1");
-			cmd.Add(gCommandInstructions.at(command)());
+			// recover state
+			cmd += ToLocal;
+			cmd += "D=M";
+			cmd += "@5"; //  endFrame
+			cmd += "M=D";
+
+			// retAddress = endFrame - 5;
+			cmd += "D=D-A";
+			cmd += "@6"; // retAddress
+			cmd += "M=D";
+
+			// ARG = pop stack
+			cmd += ToStack;
+			cmd += "AM=M-1";
+			cmd += "D=M";
+			cmd += ToArguments;
+			cmd += "A=M";
+			cmd += "M=D";
+
+			// SP = ARG + 1
+			cmd += "D=A+1";
+			cmd += ToStack;
+			cmd += "M=D";
+
+			// THAT = (endFrame - 1)
+			cmd += "@5"; // endFrame
+			cmd += "A=M-1";
+			cmd += "D=M";
+			cmd += ToThat;
+			cmd += "M=D";
+
+			// THIS = (endFrame - 2)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@2";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToThis;
+			cmd += "M=D";
+
+			// ARG = (endFrame - 3)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@3";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToArguments;
+			cmd += "M=D";
+
+			// LCL = (endFrame - 4)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@4";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToLocal;
+			cmd += "M=D";
+
+			// goto retAddress
+			cmd += "@6"; // retAddress
+			cmd += "A=M";
+			cmd += "0;JMP";
+
 		}
-		cmd.Add(ToStack);
-		cmd.Add(((command == "not") || (command == "neg")) ? "A=M" : "AM=M-1");
-		cmd.Add("A=A-1");
-		cmd.Add("M=D");
 	}
 	else if (commands.size() == 2)
 	{
@@ -150,60 +293,37 @@ std::string BuildAssembly(vmcmds& commands)
 		const vmins& offset{ commands.at(2) }; 
 		if (command == H_PUSH)
 		{
-			if (location == H_CONST)
-			{
-				cmd.Add("@" + offset);
-				cmd.Add("D=A");
-			}
-			else
-			{
-				if (location == H_TEMP)
-				{
-					cmd.Add("@" + std::to_string(5 + stoi(offset)));
-				}
-				else
-				{
-					if (offset != "0")
-					{
-						cmd.Add("@" + offset);
-						cmd.Add("D=A");
-					}
-					else
-						cmd.Add("D=0");
-					cmd.Add(gToInstructions.at(location)(offset));
-					cmd.Add(((location == H_STATIC) ? "A=D+A" : "A=M+D"));
-				}
-				cmd.Add("D=M");
-			}
-			cmd.Add(ToStack);
-			cmd.Add("A=M");
-			cmd.Add("M=D");
-			cmd.Add(ToStack);
-			cmd.Add("M=M+1");
+			cmd += GeneratePushCommand(location, offset);
 		}
 		else if (command == H_POP)
 		{
-			cmd.Add(ToStack);
-			cmd.Add("AM=M-1");
-			cmd.Add("D=M");
-			cmd.Add(gToInstructions.at(location)(offset));
-			if (location != H_POINTER)
+			cmd += GeneratePopCommand(location, offset);
+		}
+		else if (command == H_FUNC)
+		{
+			// Set current function state
+			gCurrentFunction = location;
+			gRetCount = 0;
+			cmd += "(" + location + ")";
+			// Set local variables and push stack
+			int32_t lclCount{ stoi(offset) };
+			for (int32_t i{ 0 }; i < lclCount; i++)
 			{
-				if (location == H_TEMP || location == H_STATIC)
-					cmd.Add("D=D+A");
-				else
-					cmd.Add("D=D+M");
-				cmd.Add("@" + offset);
+				cmd += GeneratePushCommand(H_CONST, "0");
 			}
-			cmd.Add("D=D+A");
-			cmd.Add(ToStack);
-			cmd.Add("A=M");
-			cmd.Add("A=M");
-			cmd.Add("A=D-A");
-			cmd.Add("M=D-A");
+		}
+		else if (command == H_CALL)
+		{
+			// save state
+			// goto function
+			vmins retLabel{ "@" + gCurrentFunction + ".return" + std::to_string(gRetCount++)};
+
+			// Push return address
+			cmd += retLabel;
+
 		}
 		else
-			std::cout << "Command: " << command << " not supported. [" << location << "]["<<offset<<"]\n";
+			std::cout << "Command: " << command << " not supported. [" << location << "][" << offset << "]\n";
 	}
 
 	return cmd.GetContent();
@@ -274,3 +394,71 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 	std::cout << "Incorrect file extension *" << filepath.extension().string() << " must be *.vm\n";
 	return EXIT_FAILURE;
 }
+
+
+/*
+vmins lclOffset{ "@" + std::to_string(stoi(offset)) };
+			int32_t rNumber{ 0 };
+			if (gFunctions.contains(location))
+				rNumber = gFunctions.at(location);
+			vmins rLabel{ location + ".return" + std::to_string(rNumber++) };
+
+			cmd += "(" + location + ")";
+cmd += ToStack;
+cmd += "A=M";
+cmd += "M=0"; // return address;
+cmd += ToStack;
+cmd += "M=M+1";
+
+// Push local 
+cmd += ToLocal;
+cmd += "D=M";
+cmd += ToStack;
+cmd += "A=M";
+cmd += "M=D";
+cmd += ToStack;
+cmd += "M=M+1";
+
+// Push arg
+cmd += ToArguments;
+cmd += "D=M";
+cmd += ToStack;
+cmd += "A=M";
+cmd += "M=D";
+cmd += ToStack;
+cmd += "M=M+1";
+
+// Push this
+cmd += ToThis;
+cmd += "D=M";
+cmd += ToStack;
+cmd += "A=M";
+cmd += "M=D";
+cmd += ToStack;
+cmd += "M=M+1";
+
+// Push That
+cmd += ToThat;
+cmd += "D=M";
+cmd += ToStack;
+cmd += "A=M";
+cmd += "M=D";
+cmd += ToStack;
+cmd += "M=M+1";
+
+// Set new ARG and LCL
+cmd += ToStack;
+cmd += "D=M";
+cmd += ToLocal;
+cmd += "M=D";
+cmd += ("@" + offset);
+cmd += "D=D-A";
+cmd += "@5";
+cmd += "D=D-A";
+cmd += ToArguments;
+cmd += "M=D";
+
+cmd += "(RETURN_ADDRESS)";
+
+gFunctions.at(location) = rNumber;
+*/

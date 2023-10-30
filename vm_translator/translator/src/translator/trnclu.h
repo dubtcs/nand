@@ -25,6 +25,10 @@
 #define H_GOTO ("goto")
 #define H_IFGO ("if-goto")
 
+#define H_CALL ("call")
+#define H_FUNC ("function")
+#define H_RETURN ("return")
+
 using vmins = std::string;
 
 namespace vmtr
