@@ -65,6 +65,7 @@ static std::unordered_map<std::string, int32_t> gFunctions{
 };
 
 //static std::stack<std::string> gCallStack{}; // this should only ever be size 1 so it could just be a string
+static std::string gCurrentFilename{};
 static std::string gCurrentFunction{};
 static int32_t gRetCount{ 0 };
 
@@ -201,18 +202,18 @@ std::string BuildAssembly(vmcmds& commands)
 		}
 		else
 		{
-			// recover state
+			// Create temporary endFrame var
 			cmd += ToLocal;
 			cmd += "D=M";
-			cmd += "@5"; //  endFrame
+			cmd += "@5";
 			cmd += "M=D";
 
-			// retAddress = endFrame - 5;
-			cmd += "D=D-A";
-			cmd += "@6"; // retAddress
+			// Create temporay returnAddress var
+			cmd += "D=D-A"; // endFrame - 5, bc we use @5 as temp
+			cmd += "@6";
 			cmd += "M=D";
 
-			// ARG = pop stack
+			// Pop stack to argument position
 			cmd += ToStack;
 			cmd += "AM=M-1";
 			cmd += "D=M";
@@ -220,55 +221,56 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd += "A=M";
 			cmd += "M=D";
 
-			// SP = ARG + 1
-			cmd += "D=A+1";
+			// Set stack to ARG + 1
+			cmd += ToArguments;
+			cmd += "D=M+1";
 			cmd += ToStack;
 			cmd += "M=D";
 
-			// THAT = (endFrame - 1)
-			cmd += "@5"; // endFrame
+			// Recover THAT to endFrame - 1 
+			cmd += "@5";
 			cmd += "A=M-1";
 			cmd += "D=M";
 			cmd += ToThat;
 			cmd += "M=D";
 
-			// THIS = (endFrame - 2)
-			cmd += "@5"; // endFrame
-			cmd += "D=M";
+			// Recover THIS to endFrame - 2
 			cmd += "@2";
-			cmd += "A=D-A";
+			cmd += "D=A";
+			cmd += "@5";
+			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToThis;
 			cmd += "M=D";
 
-			// ARG = (endFrame - 3)
-			cmd += "@5"; // endFrame
-			cmd += "D=M";
-			cmd += "@3";
-			cmd += "A=D-A";
+			// Recover ARG to ednFrame - 3
+			cmd += "@3"; // subtract amount
+			cmd += "D=A";
+			cmd += "@5";
+			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToArguments;
 			cmd += "M=D";
 
-			// LCL = (endFrame - 4)
-			cmd += "@5"; // endFrame
-			cmd += "D=M";
+			// Recover LCL to endFrame - 4
 			cmd += "@4";
-			cmd += "A=D-A";
+			cmd += "D=A";
+			cmd += "@5";
+			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToLocal;
 			cmd += "M=D";
 
-			// goto retAddress
-			cmd += "@6"; // retAddress
+			// Go to return address
+			cmd += "@6";
 			cmd += "A=M";
 			cmd += "0;JMP";
-
 		}
 	}
 	else if (commands.size() == 2)
 	{
 		const vmins& location{ commands.at(1) };
+		//vmins label{ gCurrentFunction + "$" + location };
 		if (command == H_LABEL)
 		{
 			cmd += "(" + location + ")";
@@ -314,13 +316,74 @@ std::string BuildAssembly(vmcmds& commands)
 		}
 		else if (command == H_CALL)
 		{
-			// save state
-			// goto function
-			vmins retLabel{ "@" + gCurrentFunction + ".return" + std::to_string(gRetCount++)};
+			vmins retLabel{ gCurrentFunction + ".return" + std::to_string(gRetCount++)};
 
-			// Push return address
-			cmd += retLabel;
+			// Push return address 5
+			cmd += "@" + retLabel;
+			cmd += "D=A";
+			cmd += ToStack;
+			cmd += "A=M";
+			cmd += "M=D";
+			cmd += ToStack;
+			cmd += "M=M+1";
 
+			// Push LCL 4
+			cmd += ToLocal;
+			cmd += "D=M";
+			cmd += ToStack;
+			cmd += "A=M";
+			cmd += "M=D";
+			cmd += ToStack;
+			cmd += "M=M+1";
+
+			// Push ARG 3
+			cmd += ToArguments;
+			cmd += "D=M";
+			cmd += ToStack;
+			cmd += "A=M";
+			cmd += "M=D";
+			cmd += ToStack;
+			cmd += "M=M+1";
+
+			// Push THIS 2
+			cmd += ToThis;
+			cmd += "D=M";
+			cmd += ToStack;
+			cmd += "A=M";
+			cmd += "M=D";
+			cmd += ToStack;
+			cmd += "M=M+1";
+
+			// Push THAT 1
+			cmd += ToThat;
+			cmd += "D=M";
+			cmd += ToStack;
+			cmd += "A=M";
+			cmd += "M=D";
+			cmd += ToStack;
+			cmd += "M=M+1";
+
+			// Adjust ARG
+			int32_t addressOffset{ stoi(offset) + 5 }; // numArgs + 5
+			cmd += "@" + (std::to_string(addressOffset)); //  SP - (numArgs + 5)
+			cmd += "D=A";
+			cmd += ToStack;
+			cmd += "D=M-D";
+			cmd += ToArguments;
+			cmd += "M=D";
+
+			// Adjust LCL
+			cmd += ToStack;
+			cmd += "D=M";
+			cmd += ToLocal;
+			cmd += "M=D";
+
+			// Go to function
+			cmd += "@" + location;
+			cmd += "0;JMP";
+
+			// Add return label
+			cmd += "(" + retLabel + ")";
 		}
 		else
 			std::cout << "Command: " << command << " not supported. [" << location << "][" << offset << "]\n";
@@ -350,6 +413,55 @@ int TranslateVMFile(const std::filesystem::path& filepath, std::ifstream& inFile
 	return EXIT_SUCCESS;
 }
 
+vmins GenerateBootstrapEntry()
+{
+	sform cmd{};
+
+	// Set SP
+	cmd += "@256";
+	cmd += "D=A";
+	cmd += ToStack;
+	cmd += "M=D";
+
+	// Set LCL
+	cmd += "@900";
+	cmd += "D=A";
+	cmd += ToLocal;
+	cmd += "M=D";
+
+	// Set ARG
+	cmd += "@1000";
+	cmd += "D=A";
+	cmd += ToArguments;
+	cmd += "M=D";
+
+	// Set This
+	cmd += "@1100";
+	cmd += "D=A";
+	cmd += ToThis;
+	cmd += "M=D";
+
+	// Set That
+	cmd += "@1200";
+	cmd += "D=A";
+	cmd += ToThat;
+	cmd += "M=D";
+
+	cmd += "@Sys.init";
+	cmd += "0;JMP";
+
+	return cmd.GetContent();
+}
+
+// Creates an output file and inserts required bootstrap code
+std::ofstream CreateVMOutFile(const std::string& filename)
+{
+	//std::string outName{ path.filename().replace_extension(".asm").string() };
+	std::ofstream outFile{ filename + ".asm" };
+	WriteLineToFile(outFile, GenerateBootstrapEntry());
+	return outFile;
+}
+
 int TranslateVMCode(const std::filesystem::path& filepath)
 {
 	if (std::filesystem::exists(filepath))
@@ -359,9 +471,8 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 			std::ifstream inFile{};
 			inFile.open(filepath.string());
 
-			std::string outName{ filepath.filename().replace_extension(".asm").string() };
-			std::ofstream outFile{ outName };
-
+			std::ofstream outFile{ CreateVMOutFile(filepath.filename().replace_extension("").string())};
+			gCurrentFilename = filepath.filename().replace_extension("").string();
 			TranslateVMFile(filepath, inFile, outFile);
 			
 			inFile.close();
@@ -370,8 +481,8 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 		}
 		else if (std::filesystem::is_directory(filepath))
 		{
-			std::string outName{ filepath.filename().replace_extension(".asm").string() };
-			std::ofstream outFile{ outName };
+			std::filesystem::path newPath{ filepath.string() + "/" + filepath.filename().string() };
+			std::ofstream outFile{ CreateVMOutFile(newPath.string()) };
 
 			WriteLineToFile(outFile, "// Translating directory");
 			for (const std::filesystem::path& fi : std::filesystem::recursive_directory_iterator(filepath))
@@ -380,6 +491,7 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 				if (fi.extension() == ".vm")
 				{
 					WriteLineToFile(outFile, "// FILE " + fi.string());
+					gCurrentFilename = filepath.filename().replace_extension("").string();
 					std::ifstream inFile{};
 					inFile.open(fi.string());
 					TranslateVMFile(fi, inFile, outFile);
@@ -461,4 +573,144 @@ cmd += "M=D";
 cmd += "(RETURN_ADDRESS)";
 
 gFunctions.at(location) = rNumber;
+*/
+
+
+/*
+
+
+			//// Push return address
+			//cmd += "@" + retLabel;
+			//cmd += "D=A";
+			//cmd += ToStack;
+			//cmd += "A=M";
+			//cmd += "M=D";
+			//cmd += ToStack;
+			//cmd += "M=M+1";
+
+			//// Push LCL
+			//cmd += ToLocal;
+			//cmd += "D=M";
+			//cmd += ToStack;
+			//cmd += "A=M";
+			//cmd += "M=D";
+			//cmd += ToStack;
+			//cmd += "M=M+1";
+
+			//// Push ARG
+			//cmd += ToArguments;
+			//cmd += "D=M";
+			//cmd += ToStack;
+			//cmd += "A=M";
+			//cmd += "M=D";
+			//cmd += ToStack;
+			//cmd += "M=M+1";
+
+			//// Push THIS
+			//cmd += ToThis;
+			//cmd += "D=M";
+			//cmd += ToStack;
+			//cmd += "A=M";
+			//cmd += "M=D";
+			//cmd += ToStack;
+			//cmd += "M=M+1";
+
+			//// Push THAT
+			//cmd += ToThat;
+			//cmd += "D=M";
+			//cmd += ToStack;
+			//cmd += "A=M";
+			//cmd += "M=D";
+			//cmd += ToStack;
+			//cmd += "M=M+1";
+
+			//// Move ARG
+			//cmd += ToStack;
+			//cmd += "D=M";
+			//cmd += "@5";
+			//cmd += "D=D-A";
+			//cmd += ToArguments;
+			//cmd += "M=D";
+
+			//// Set LCL
+			//cmd += ToStack;
+			//cmd += "D=M";
+			//cmd += ToLocal;
+			//cmd += "M=D";
+
+			//// GOTO
+			//cmd += "@" + location;
+			//cmd += "0;JMP";
+
+			//cmd += "(" + retLabel + ")";
+
+*/
+
+
+/*
+
+// recover state
+			cmd += ToLocal;
+			cmd += "D=M";
+			cmd += "@5"; //  endFrame
+			cmd += "M=D";
+
+			// retAddress = endFrame - 5;
+			cmd += "D=D-A";
+			cmd += "@6"; // retAddress
+			cmd += "M=D";
+
+			// ARG = pop stack
+			cmd += ToStack;
+			cmd += "AM=M-1";
+			cmd += "D=M";
+			cmd += ToArguments;
+			cmd += "A=M";
+			cmd += "M=D";
+
+			// SP = ARG + 1
+			cmd += "D=A+1";
+			cmd += ToStack;
+			cmd += "M=D";
+
+			// THAT = (endFrame - 1)
+			cmd += "@5"; // endFrame
+			cmd += "A=M-1";
+			cmd += "D=M";
+			cmd += ToThat;
+			cmd += "M=D";
+
+			// THIS = (endFrame - 2)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@2";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToThis;
+			cmd += "M=D";
+
+			// ARG = (endFrame - 3)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@3";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToArguments;
+			cmd += "M=D";
+
+			// LCL = (endFrame - 4)
+			cmd += "@5"; // endFrame
+			cmd += "D=M";
+			cmd += "@4";
+			cmd += "A=D-A";
+			cmd += "D=M";
+			cmd += ToLocal;
+			cmd += "M=D";
+
+			// goto retAddress
+			cmd += "@6"; // retAddress
+			cmd += "A=M";
+			cmd += "0;JMP";
+
+
 */

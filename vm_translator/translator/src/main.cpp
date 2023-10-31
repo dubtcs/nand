@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 {
 #ifdef VMTRANS_DB
 	TranslateVMCode("ignores/SimpleFunction.vm");
-	//TranslateVMCode("ignores");
+	TranslateVMCode("ignores");
 #endif
 	if (argc == 2)
 	{
