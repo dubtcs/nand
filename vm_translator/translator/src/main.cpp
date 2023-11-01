@@ -6,10 +6,10 @@
 int main(int argc, char* argv[])
 {
 #ifdef VMTRANS_DB
-	TranslateVMCode("ignores/SimpleFunction.vm");
-	TranslateVMCode("ignores");
+	TranslateVMCode("ignores/nestedcalls.vm");
+	//TranslateVMCode("ignores");
 #endif
-	if (argc == 2)
+	if (argc >= 2)
 	{
 		return TranslateVMCode(argv[1]);
 	}

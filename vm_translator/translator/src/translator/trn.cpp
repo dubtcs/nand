@@ -205,12 +205,14 @@ std::string BuildAssembly(vmcmds& commands)
 			// Create temporary endFrame var
 			cmd += ToLocal;
 			cmd += "D=M";
-			cmd += "@5";
+			cmd += "@endFrame"; // @5
 			cmd += "M=D";
 
 			// Create temporay returnAddress var
-			cmd += "D=D-A"; // endFrame - 5, bc we use @5 as temp
-			cmd += "@6";
+			cmd += "@5";
+			cmd += "A=D-A"; // endFrame - 5, bc we use @5 as temp
+			cmd += "D=M";
+			cmd += "@rtAd"; // @6
 			cmd += "M=D";
 
 			// Pop stack to argument position
@@ -228,7 +230,7 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd += "M=D";
 
 			// Recover THAT to endFrame - 1 
-			cmd += "@5";
+			cmd += "@endFrame";
 			cmd += "A=M-1";
 			cmd += "D=M";
 			cmd += ToThat;
@@ -237,7 +239,7 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover THIS to endFrame - 2
 			cmd += "@2";
 			cmd += "D=A";
-			cmd += "@5";
+			cmd += "@endFrame";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToThis;
@@ -246,7 +248,7 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover ARG to ednFrame - 3
 			cmd += "@3"; // subtract amount
 			cmd += "D=A";
-			cmd += "@5";
+			cmd += "@endFrame";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToArguments;
@@ -255,14 +257,14 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover LCL to endFrame - 4
 			cmd += "@4";
 			cmd += "D=A";
-			cmd += "@5";
+			cmd += "@endFrame";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToLocal;
 			cmd += "M=D";
 
 			// Go to return address
-			cmd += "@6";
+			cmd += "@rtAd";
 			cmd += "A=M";
 			cmd += "0;JMP";
 		}
@@ -295,11 +297,11 @@ std::string BuildAssembly(vmcmds& commands)
 		const vmins& offset{ commands.at(2) }; 
 		if (command == H_PUSH)
 		{
-			cmd += GeneratePushCommand(location, offset);
+			cmd = GeneratePushCommand(location, offset);
 		}
 		else if (command == H_POP)
 		{
-			cmd += GeneratePopCommand(location, offset);
+			cmd = GeneratePopCommand(location, offset);
 		}
 		else if (command == H_FUNC)
 		{
@@ -418,33 +420,9 @@ vmins GenerateBootstrapEntry()
 	sform cmd{};
 
 	// Set SP
-	cmd += "@256";
+	cmd += "@261";
 	cmd += "D=A";
 	cmd += ToStack;
-	cmd += "M=D";
-
-	// Set LCL
-	cmd += "@900";
-	cmd += "D=A";
-	cmd += ToLocal;
-	cmd += "M=D";
-
-	// Set ARG
-	cmd += "@1000";
-	cmd += "D=A";
-	cmd += ToArguments;
-	cmd += "M=D";
-
-	// Set This
-	cmd += "@1100";
-	cmd += "D=A";
-	cmd += ToThis;
-	cmd += "M=D";
-
-	// Set That
-	cmd += "@1200";
-	cmd += "D=A";
-	cmd += ToThat;
 	cmd += "M=D";
 
 	cmd += "@Sys.init";
@@ -471,7 +449,7 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 			std::ifstream inFile{};
 			inFile.open(filepath.string());
 
-			std::ofstream outFile{ CreateVMOutFile(filepath.filename().replace_extension("").string())};
+			std::ofstream outFile{ CreateVMOutFile(filepath.filename().replace_extension("").string()) };
 			gCurrentFilename = filepath.filename().replace_extension("").string();
 			TranslateVMFile(filepath, inFile, outFile);
 			
