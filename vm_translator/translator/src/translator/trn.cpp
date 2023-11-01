@@ -17,7 +17,7 @@
 // 4			: That Pointer,		@THAT
 // 5 - 12		: Temp Sotrage
 // 13 - 15		: General Registers
-// 16 - 255		: Statiuc Variables
+// 16 - 255		: Static Variables
 // 256 - 2017	: Stack
 //
 
@@ -36,6 +36,14 @@ inline constexpr charp ToThis{ "@3" };
 inline constexpr charp ToThat{ "@4" };
 inline constexpr charp ToTemp{ "@5" };
 inline constexpr charp ToStatic{ "@16" };
+
+static std::string gCurrentFilename{};
+static std::string gCurrentFunction{};
+static int32_t gRetCount{ 0 };
+
+// Filename and static start points
+static int32_t gCurrentStaticOffset{ 0 };
+static std::unordered_map<std::string, int32_t> gStaticOffsets{};
 
 static const std::unordered_map<std::string, std::function<vmins()>> gCommandInstructions{
 	{"add", []() { return "D=D+M"; }},
@@ -57,17 +65,20 @@ static const std::unordered_map<std::string, std::function<vmins(const vmins& of
 	{ H_THIS,	[](const vmins& offset) { return ToThis; }},
 	{ H_ARGS,	[](const vmins& offset) { return ToArguments; }},
 	{ H_THAT,	[](const vmins& offset) { return ToThat; }},
-	{ H_STATIC,	[](const vmins& offset) { return ToStatic; }}
+	{ H_STATIC,	[](const vmins& offset) { return ("@" + std::to_string(16 + gStaticOffsets.at(gCurrentFilename))); }} // base address + file offset
 };
 
 static std::unordered_map<std::string, int32_t> gFunctions{
 	// used to keep track of function return amounts
 };
 
-//static std::stack<std::string> gCallStack{}; // this should only ever be size 1 so it could just be a string
-static std::string gCurrentFilename{};
-static std::string gCurrentFunction{};
-static int32_t gRetCount{ 0 };
+void AdjustStaticOffset(int32_t offset)
+{
+	if (gCurrentStaticOffset <= gStaticOffsets.at(gCurrentFilename) + offset)
+	{
+		gCurrentStaticOffset = gStaticOffsets.at(gCurrentFilename) + offset + 1;
+	}
+}
 
 vmins GeneratePushCommand(const vmins& location, const vmins& offset)
 {
@@ -87,6 +98,10 @@ vmins GeneratePushCommand(const vmins& location, const vmins& offset)
 		{
 			if (location != H_POINTER)
 			{
+				if (location == H_STATIC)
+				{
+					AdjustStaticOffset(stoi(offset));
+				}
 				if (offset != "0")
 				{
 					cmd.Add("@" + offset);
@@ -123,7 +138,11 @@ vmins GeneratePopCommand(const vmins& location, const vmins& offset)
 	if (location != H_POINTER)
 	{
 		if (location == H_TEMP || location == H_STATIC)
+		{
+			if (location == H_STATIC)
+				AdjustStaticOffset(stoi(offset));
 			cmd.Add("D=D+A");
+		}
 		else
 			cmd.Add("D=D+M");
 		cmd.Add("@" + offset);
@@ -205,14 +224,14 @@ std::string BuildAssembly(vmcmds& commands)
 			// Create temporary endFrame var
 			cmd += ToLocal;
 			cmd += "D=M";
-			cmd += "@endFrame"; // @5
+			cmd += "@13"; // @5, @endFrame
 			cmd += "M=D";
 
 			// Create temporay returnAddress var
 			cmd += "@5";
 			cmd += "A=D-A"; // endFrame - 5, bc we use @5 as temp
 			cmd += "D=M";
-			cmd += "@rtAd"; // @6
+			cmd += "@14"; // @6, @rtAd
 			cmd += "M=D";
 
 			// Pop stack to argument position
@@ -230,7 +249,7 @@ std::string BuildAssembly(vmcmds& commands)
 			cmd += "M=D";
 
 			// Recover THAT to endFrame - 1 
-			cmd += "@endFrame";
+			cmd += "@13";
 			cmd += "A=M-1";
 			cmd += "D=M";
 			cmd += ToThat;
@@ -239,7 +258,7 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover THIS to endFrame - 2
 			cmd += "@2";
 			cmd += "D=A";
-			cmd += "@endFrame";
+			cmd += "@13";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToThis;
@@ -248,7 +267,7 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover ARG to ednFrame - 3
 			cmd += "@3"; // subtract amount
 			cmd += "D=A";
-			cmd += "@endFrame";
+			cmd += "@13";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToArguments;
@@ -257,14 +276,14 @@ std::string BuildAssembly(vmcmds& commands)
 			// Recover LCL to endFrame - 4
 			cmd += "@4";
 			cmd += "D=A";
-			cmd += "@endFrame";
+			cmd += "@13";
 			cmd += "A=M-D";
 			cmd += "D=M";
 			cmd += ToLocal;
 			cmd += "M=D";
 
 			// Go to return address
-			cmd += "@rtAd";
+			cmd += "@14";
 			cmd += "A=M";
 			cmd += "0;JMP";
 		}
@@ -425,6 +444,30 @@ vmins GenerateBootstrapEntry()
 	cmd += ToStack;
 	cmd += "M=D";
 
+	// Set LCL
+	cmd += "@900";
+	cmd += "D=A";
+	cmd += ToLocal;
+	cmd += "M=D";
+
+	// Set ARG
+	cmd += "@1000";
+	cmd += "D=A";
+	cmd += ToArguments;
+	cmd += "M=D";
+
+	// Set This
+	cmd += "@1100";
+	cmd += "D=A";
+	cmd += ToThis;
+	cmd += "M=D";
+
+	// Set That
+	cmd += "@1200";
+	cmd += "D=A";
+	cmd += ToThat;
+	cmd += "M=D";
+
 	cmd += "@Sys.init";
 	cmd += "0;JMP";
 
@@ -468,14 +511,19 @@ int TranslateVMCode(const std::filesystem::path& filepath)
 				std::cout << fi.string() << "\n";
 				if (fi.extension() == ".vm")
 				{
-					WriteLineToFile(outFile, "// FILE " + fi.string());
 					gCurrentFilename = filepath.filename().replace_extension("").string();
+					gStaticOffsets[gCurrentFilename] = gCurrentStaticOffset;
+
+					WriteLineToFile(outFile, "// FILE " + fi.string());
 					std::ifstream inFile{};
 					inFile.open(fi.string());
 					TranslateVMFile(fi, inFile, outFile);
 					inFile.close();
+					//std::cout << "Static variables in file: " << gCurrentStaticOffset - gStaticOffsets.at(gCurrentFilename) << "\n";
+					//std::cout << "Static offset: " << 16 + gStaticOffsets.at(gCurrentFilename) << "\n";
 				}
 			}
+			//std::cout << "Total static variables: " << gCurrentStaticOffset << "\n";
 
 			outFile.close();
 			return EXIT_SUCCESS;

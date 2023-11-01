@@ -6,7 +6,7 @@
 int main(int argc, char* argv[])
 {
 #ifdef VMTRANS_DB
-	TranslateVMCode("ignores/nestedcalls.vm");
+	TranslateVMCode("ignores/staticstest");
 	//TranslateVMCode("ignores");
 #endif
 	if (argc >= 2)
