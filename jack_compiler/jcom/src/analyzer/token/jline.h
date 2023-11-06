@@ -6,12 +6,18 @@
 namespace jcom
 {
 
+	struct jpair
+	{
+		jtok type{ JackToken::None };
+		token content{};
+	};
+
 	class jline
 	{
 	public:
 		jline(const std::string& line);
 	public:
-		bool Next(token& target);
+		bool Next(jpair& target);
 	protected:
 		size_t mCursor{ 0 };
 		const std::string& mContent;

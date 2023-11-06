@@ -10,18 +10,7 @@
 namespace jcom
 {
 
-	void AnalyzeFile(std::ifstream& inFile)
-	{
-		std::string str{ };
-		while (std::getline(inFile, str))
-		{
-			jline line{ str };
-			token t{};
-			while (line.Next(t))
-			{
-				std::cout << "Rec: " << t << "\n";
-			}
-		}
-	}
+	void AnalyzeFile(std::ifstream& inFile);
+	jtok bruh();
 
 }

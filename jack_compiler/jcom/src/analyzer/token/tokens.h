@@ -10,15 +10,18 @@ namespace jcom
 
 	using token = std::string;
 
-	enum jtok : int32_t
+	enum class JackToken
 	{
-		jtok_keyword = BIT(0),
-		jtok_symbol = BIT(1),
-		jtok_int = BIT(2),
-		jtok_str = BIT(3),
-		jtok_id = BIT(4)
+		None,
+		Keyword,
+		Symbol,
+		Int,
+		String,
+		Id
 	};
+	using jtok = JackToken;
 
-	extern std::unordered_map<token, jtok> gReservedTokens;
+	extern std::unordered_map<JackToken, std::string> gTokenFlags;
+	extern std::unordered_map<token, JackToken> gReservedTokens;
 
 }
