@@ -1,0 +1,20 @@
+<tokens>
+	<keyword>int<keyword>
+	<identifier>Test1<identifier>
+	<symbol>(<symbol>
+	<symbol>)<symbol>
+	<symbol>{<symbol>
+	<keyword>field<keyword>
+	<keyword>int<keyword>
+	<identifier>i<identifier>
+	<symbol>;<symbol>
+	<keyword>let<keyword>
+	<identifier>i<identifier>
+	<symbol>=<symbol>
+	<integerConstant>512<integerConstant>
+	<symbol>;<symbol>
+	<keyword>return<keyword>
+	<identifier>i<identifier>
+	<symbol>;<symbol>
+	<symbol>}<symbol>
+</tokens>

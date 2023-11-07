@@ -11,10 +11,13 @@ namespace jcom
 		if (path.extension() == JACK_EXTENSION)
 		{
 			std::ifstream inFile{ path.string() };
+			std::string newName{ '\\' + path.filename().replace_extension("xml").string()};
+			std::ofstream outFile{ path.parent_path().string() + newName};
 
-			jcom::AnalyzeFile(inFile);
+			jcom::AnalyzeFile(inFile, outFile);
 
 			inFile.close();
+			outFile.close();
 			return EXIT_SUCCESS;
 		}
 		return EXIT_FAILURE;

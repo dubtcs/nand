@@ -15,12 +15,14 @@ namespace jcom
 	class jline
 	{
 	public:
+		jline() = default;
 		jline(const std::string& line);
 	public:
 		bool Next(jpair& target);
 	protected:
 		size_t mCursor{ 0 };
 		const std::string& mContent;
+		friend class jfile;
 	};
 
 }

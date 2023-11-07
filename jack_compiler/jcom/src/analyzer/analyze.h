@@ -10,7 +10,6 @@
 namespace jcom
 {
 
-	void AnalyzeFile(std::ifstream& inFile);
-	jtok bruh();
+	void AnalyzeFile(std::ifstream& inFile, std::ofstream& outFile);
 
 }

@@ -4,12 +4,13 @@
 namespace jcom
 {
 
-	std::unordered_map<jtok, std::string> gTokenFlags{
-		{JackToken::Id, "<id>"},
-		{JackToken::Int,"<int>"},
-		{JackToken::Keyword, "<keyword>"},
-		{JackToken::String, "<string>"},
-		{JackToken::Symbol, "<symbol>"}
+	// replace <> with &gt; &lt; &quot; &amp;
+	std::unordered_map<jtok, Tag> gTokenFlags{
+		{JackToken::Id, {"<identifier>", "</identifier>"} },
+		{JackToken::Int,{"<integerConstant>", "</integerConstant>"}},
+		{JackToken::Keyword, {"<keyword>", "</keyword>"}},
+		{JackToken::String, {"<stringConstant>", "</stringConstant>"}},
+		{JackToken::Symbol, {"<symbol>", "</symbol>"}}
 	};
 
 	std::unordered_map<token, jtok> gReservedTokens{

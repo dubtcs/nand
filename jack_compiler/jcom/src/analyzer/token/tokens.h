@@ -4,11 +4,18 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <functional>
 
 namespace jcom
 {
 
 	using token = std::string;
+
+	struct Tag
+	{
+		const std::string opener;
+		const std::string closer;
+	};
 
 	enum class JackToken
 	{
@@ -21,7 +28,8 @@ namespace jcom
 	};
 	using jtok = JackToken;
 
-	extern std::unordered_map<JackToken, std::string> gTokenFlags;
+	extern std::unordered_map<std::string, std::function<void()>> gg;
+	extern std::unordered_map<JackToken, Tag> gTokenFlags; // termonal elements
 	extern std::unordered_map<token, JackToken> gReservedTokens;
 
 }
