@@ -28,6 +28,7 @@ workspace "jcom"
         files {
             "%{prj.name}/src/**.h",
             "%{prj.name}/src/**.cpp",
+            "%{prj.name}/main.cpp"
         };
 
         includedirs {
@@ -57,3 +58,4 @@ workspace "jcom"
         filter "configurations:Dist"
             runtime "Release"
             optimize "On"
+            

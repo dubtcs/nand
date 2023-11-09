@@ -26,13 +26,24 @@ namespace jcom
 			bool found{ false };
 			bool isString{ false };
 
-			while (!found && (mCursor < mContent.size()))
+			while ((!found) && (mCursor < mContent.size()) && (CheckContent()))
 			{
 				const char& c{ mContent[mCursor] };
 				if (!isString)
 				{
 					if (c != ' ' && c != '\t')
 					{
+
+						if (c == '/') // comments
+						{
+							if (mContent[mCursor + 1] == '/')
+							{
+								mCursor = mContent.size();
+								CheckContent();
+								continue;
+							}
+						}
+
 						if (gReservedTokens.contains(token{ c }))
 						{
 							if (str.empty())
@@ -91,6 +102,7 @@ namespace jcom
 		if (pair.type == JackToken::None && (!pair.content.empty()))
 			pair.type = JackToken::Id; // nothing else but Identifier
 
+		mCurrent = pair;
 		return pair.type != JackToken::None;
 	}
 
@@ -105,6 +117,11 @@ namespace jcom
 			return !mFile.eof();
 		}
 		return true;
+	}
+
+	jpair jfile::GetCurrent()
+	{
+		return mCurrent;
 	}
 
 }

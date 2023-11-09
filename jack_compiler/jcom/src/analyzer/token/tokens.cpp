@@ -13,6 +13,11 @@ namespace jcom
 		{JackToken::Symbol, {"<symbol>", "</symbol>"}}
 	};
 
+	std::unordered_set<token> gComplexKeywords
+	{
+		"class", "constructor", "function", "method", "field", "static", "var", "let", "do", "if", "while", "return"
+	};
+
 	std::unordered_map<token, jtok> gReservedTokens{
 		// Keywords
 		{"class",		JackToken::Keyword},

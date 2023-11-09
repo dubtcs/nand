@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
 #ifdef JCOM_DEBUG
-	jcom::CompileJack("ignores/a2");
+	jcom::CompileJack("tests/t2");
 #endif
 	if (argc > 2)
 		return jcom::CompileJack(argv[1]);

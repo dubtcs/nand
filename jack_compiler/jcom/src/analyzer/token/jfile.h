@@ -18,12 +18,14 @@ namespace jcom
 		// @param pair - Struct to insert data into
 		// @return if another token is available
 		bool NextToken(jpair& pair);
+		jpair GetCurrent();
 	protected:
 		bool CheckContent();
 	protected:
+		size_t mCursor{ 0 };
+		jpair mCurrent{};
 		std::ifstream& mFile;
 		std::string mContent{};
-		size_t mCursor{ 0 };
 	};
 
 }
