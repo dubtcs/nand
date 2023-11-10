@@ -8,6 +8,11 @@ namespace jcom
 	static size_t gCurrentTree{ 0 };
 	static std::string gTreePrefix{};
 
+	static std::unordered_set<token> gStatements
+	{
+		"do", "let", "while", "return", "if"
+	};
+
 	void WriteLine(std::ofstream& file, const std::string& str)
 	{
 		file << str << "\n";
@@ -56,12 +61,113 @@ namespace jcom
 	void ParseClassVar(std::ofstream& of, jfile& f);
 	void ParseSubroutine(std::ofstream& of, jfile& f);
 	void ParseParameters(std::ofstream& of, jfile& f);
+	void ParseSubroutineBody(std::ofstream& of, jfile& f);
+	void ParseStatement(std::ofstream& outFile, jfile& file);
+	void ParseExpression(std::ofstream& outFile, jfile& file);
+	void ParseExpressionList(std::ofstream& outFile, jfile& file);
 
 	// Standard token output as <type>content</type>
 	void ParseToken(std::ofstream& outFile, const jpair& pair)
 	{
 		std::string content{ gTokenFlags.at(pair.type).opener + pair.content + gTokenFlags.at(pair.type).closer };
 		WriteLine(outFile, JTreeFormat(content));
+	}
+
+	void ParseExpression(std::ofstream& outFile, jfile& file)
+	{
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+
+		WriteLine(outFile, JTreeFormat("<expression>"));
+		IncTreeString();
+
+		while (!end && file.NextToken(pair))
+		{
+			const token& tk{ pair.content };
+			if (pair.content == ")")
+				end = true;
+			else
+				ParseToken(outFile, pair);
+		}
+
+		DecTreeString();
+		WriteLine(outFile, JTreeFormat("</expression>"));
+
+		// manual tree inc/dec bc the formatting rules change here???
+
+		ParseToken(outFile, pair);
+	}
+
+	void ParseExpressionList(std::ofstream& outFile, jfile& file)
+	{
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+
+		WriteLine(outFile, JTreeFormat("<expressionList>"));
+		IncTreeString();
+
+		while (!end && file.NextToken(pair))
+		{
+			const token& tk{ pair.content };
+			if (pair.content == ")")
+				end = true;
+			else
+				ParseToken(outFile, pair);
+		}
+
+		DecTreeString();
+		WriteLine(outFile, JTreeFormat("</expressionList>"));
+
+		// manual tree inc/dec bc the formatting rules change here???
+		
+		ParseToken(outFile, pair);
+	}
+
+	void ParseStatement(std::ofstream& outFile, jfile& file)
+	{
+		token h1{ file.GetCurrent().content };
+		jph h{ outFile, h1 + "Statement" };
+
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+		while (!end && file.NextToken(pair))
+		{
+			const token& tk{ pair.content };
+			if (tk == "(")
+				if (h1 == "do")
+					ParseExpressionList(outFile, file);
+				else
+					ParseExpression(outFile, file);
+			else
+				ParseToken(outFile, pair);
+			end = (pair.content == ";");
+		}
+	}
+
+	void ParseVar(std::ofstream& outFile, jfile& file)
+	{
+		jph h{ outFile, "varDec" };
+
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+		while (!end && file.NextToken(pair))
+		{
+			ParseToken(outFile, pair);
+			end = (pair.content == ";");
+		}
+
 	}
 
 	void ParseClassVar(std::ofstream& outFile, jfile& file)
@@ -80,10 +186,10 @@ namespace jcom
 		}
 
 	}
-
-	void ParseParameters(std::ofstream& outFile, jfile& file)
+	
+	void ParseSubroutineBody(std::ofstream& outFile, jfile& file)
 	{
-		jph header{ outFile, "parameterList" };
+		jph header{ outFile, "subroutineBody" };
 
 		jpair pair{};
 		bool end{ false };
@@ -93,9 +199,44 @@ namespace jcom
 		while (!end && file.NextToken(pair))
 		{
 			const token& tk{ pair.content };
-			ParseToken(outFile, pair);
+			if (tk == "var")
+				ParseVar(outFile, file);
+			else if (gStatements.contains(tk))
+				ParseStatement(outFile, file);
+			else
+				ParseToken(outFile, pair);
+
+			end = (pair.content == "}");
+		}
+
+	}
+
+	void ParseParameters(std::ofstream& outFile, jfile& file)
+	{
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+
+		WriteLine(outFile, JTreeFormat("<parameterList>"));
+		IncTreeString();
+
+		while (!end && file.NextToken(pair))
+		{
+			const token& tk{ pair.content };
+			if (tk == ")")
+				end = true;
+			else
+				ParseToken(outFile, pair);
 			end = (pair.content == ")");
 		}
+
+		DecTreeString();
+		WriteLine(outFile, JTreeFormat("</parameterList>"));
+
+		ParseToken(outFile, pair);
+
 	}
 
 	void ParseSubroutine(std::ofstream& outFile, jfile& file)
@@ -112,6 +253,8 @@ namespace jcom
 			const token& tk{ pair.content };
 			if (tk == "(")
 				ParseParameters(outFile, file);
+			else if (tk == "{")
+				ParseSubroutineBody(outFile, file);
 			else
 				ParseToken(outFile, pair);
 			end = (pair.content == "}");
