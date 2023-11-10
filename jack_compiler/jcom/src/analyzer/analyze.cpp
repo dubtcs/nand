@@ -57,12 +57,14 @@ namespace jcom
 	// These all do the same thing
 	// Can just have a lambda that acts as a break function, with keywords mapped to functions for specifics
 	void ParseToken(std::ofstream& outFile, const jpair& pair);
+	void ParseVar(std::ofstream& outfile, jfile& file);
 	void ParseClass();
 	void ParseClassVar(std::ofstream& of, jfile& f);
 	void ParseSubroutine(std::ofstream& of, jfile& f);
 	void ParseParameters(std::ofstream& of, jfile& f);
 	void ParseSubroutineBody(std::ofstream& of, jfile& f);
 	void ParseStatement(std::ofstream& outFile, jfile& file);
+	void ParseStatementBody(std::ofstream& outFile, jfile& file);
 	void ParseExpression(std::ofstream& outFile, jfile& file);
 	void ParseExpressionList(std::ofstream& outFile, jfile& file);
 
@@ -129,6 +131,35 @@ namespace jcom
 		ParseToken(outFile, pair);
 	}
 
+	void ParseStatementBody(std::ofstream& outFile, jfile& file)
+	{
+
+		jpair pair{};
+		bool end{ false };
+
+		// This is so we include the keyword
+		ParseToken(outFile, file.GetCurrent());
+
+		{
+			jph header{ outFile, "statements" };
+			while (!end && file.NextToken(pair))
+			{
+				const token& tk{ pair.content };
+				if(tk == "}")
+					end = (pair.content == "}");
+				else if (tk == "var")
+					ParseVar(outFile, file);
+				else if (gStatements.contains(tk))
+					ParseStatement(outFile, file);
+				else
+					ParseToken(outFile, pair);
+			}
+		}
+
+		ParseToken(outFile, file.GetCurrent());
+
+	}
+
 	void ParseStatement(std::ofstream& outFile, jfile& file)
 	{
 		token h1{ file.GetCurrent().content };
@@ -147,6 +178,8 @@ namespace jcom
 					ParseExpressionList(outFile, file);
 				else
 					ParseExpression(outFile, file);
+			else if (tk == "{")
+				ParseStatementBody(outFile, file);
 			else
 				ParseToken(outFile, pair);
 			end = (pair.content == ";");
@@ -186,6 +219,27 @@ namespace jcom
 		}
 
 	}
+
+	void ParseStatements(std::ofstream& outFile, jfile& file)
+	{
+		jph smt{ outFile, "statements" };
+
+		jpair pair{};
+		bool end{ false };
+
+		if (gStatements.contains(file.GetCurrent().content)) // always passes, but double checking
+			ParseStatement(outFile, file);
+		while (!end && file.NextToken(pair))
+		{
+			const token& tk{ pair.content };
+			if (gStatements.contains(tk))
+				ParseStatement(outFile, file);
+			else
+				ParseToken(outFile, pair);
+			end = (tk == "}");
+		}
+
+	}
 	
 	void ParseSubroutineBody(std::ofstream& outFile, jfile& file)
 	{
@@ -199,14 +253,17 @@ namespace jcom
 		while (!end && file.NextToken(pair))
 		{
 			const token& tk{ pair.content };
-			if (tk == "var")
+			if (tk == "}")
+				end = true;
+			else if (tk == "var")
 				ParseVar(outFile, file);
 			else if (gStatements.contains(tk))
-				ParseStatement(outFile, file);
+			{
+				ParseStatements(outFile, file);
+				end = true;
+			}
 			else
 				ParseToken(outFile, pair);
-
-			end = (pair.content == "}");
 		}
 
 	}
@@ -254,10 +311,12 @@ namespace jcom
 			if (tk == "(")
 				ParseParameters(outFile, file);
 			else if (tk == "{")
+			{
 				ParseSubroutineBody(outFile, file);
+				end = true;
+			}
 			else
 				ParseToken(outFile, pair);
-			end = (pair.content == "}");
 		}
 	}
 

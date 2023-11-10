@@ -16,7 +16,7 @@ namespace jcom
 		Class,
 		ParameterList,
 		ClassVarDec,
-		SubroutineDec,
+		Subroutine,
 		SubroutineBody,
 		VarDec,
 		Statement,
@@ -43,11 +43,15 @@ namespace jcom
 		void DecTree();
 		void Header(const std::string& name);
 		void Footer(const std::string& name);
+
+		void WriteToken();
+		void WriteLine(const std::string& str);
 	protected:
 		std::ifstream& mInFile;
 		std::ofstream& mOutFile;
 		jfile mFile;
 		std::stack<jdesc> mStack;
+		std::string mTreeString{};
 	};
 
 }
