@@ -82,8 +82,8 @@ namespace jcom
 		while (mFile.Available())
 		{
 			jcontext context{ gContexts.at(mStack.top()) };
-			jpair& pair{ mFile.Get() };
-			token& tk{ pair.content };
+			jpair pair{ mFile.Get() };
+			token tk{ pair.content };
 
 			if (context.contextOverrides.contains(tk)) // check for generic container keyword
 			{
@@ -93,9 +93,25 @@ namespace jcom
 
 			if (gKeywordDescs.contains(tk))
 				IncTree(gKeywordDescs.at(tk));
+
+			if (mStack.top() == jdesc::Statement)
+				if (tk == context.breaker)
+					DecTree();
 			WriteToken();
+
 			if (tk == context.breaker)
-				DecTree();
+			{
+				if (mStack.top() == jdesc::IfStatement) // maybe add context continues? IfStatement might be the only weird one here
+				{
+					const token& tk2{ mFile.PeekNext().content };
+					if (tk2 != "else")
+						DecTree();
+					else
+						WriteToken();
+				}
+				else
+					DecTree();
+			}
 			mFile.Next();
 
 		}

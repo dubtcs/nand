@@ -9,15 +9,13 @@ namespace jcom
 	jfile::jfile(std::ifstream& f) :
 		mFile{ f }
 	{
+		FillPair(mNext);
 		Next();
 	}
 
-	bool jfile::Next()
+	void jfile::FillPair(jpair& pair)
 	{
-
-		mCurrent = jpair{};
-
-		// Resetting cursor and line
+		pair = jpair{};
 		if (CheckContent())
 		{
 			token str{};
@@ -47,7 +45,7 @@ namespace jcom
 						{
 							if (str.empty())
 							{
-								mCurrent.type = JackToken::Symbol;
+								pair.type = JackToken::Symbol;
 								str = c;
 								mCursor++;
 							}
@@ -58,12 +56,12 @@ namespace jcom
 							if (c == '"') // flag as string but don't include the double quotes
 							{
 								isString = true;
-								mCurrent.type = JackToken::String;
+								pair.type = JackToken::String;
 							}
 							else
 							{
 								if (std::isdigit(c) && str.empty())
-									mCurrent.type = JackToken::Int;
+									pair.type = JackToken::Int;
 								str += c;
 							}
 							if (gKeywords.contains(str)) // check if current string is a keyword
@@ -72,7 +70,7 @@ namespace jcom
 								if (cn == ' ' || gKeywords.contains(token{ cn })) // if it is, this token is complete, otherwise, it's an identifier like intOne or somn
 								{
 									found = true;
-									mCurrent.type = JackToken::Keyword;
+									pair.type = JackToken::Keyword;
 								}
 							}
 							mCursor++;
@@ -95,13 +93,23 @@ namespace jcom
 				}
 			}
 
-			mCurrent.content = str;
+			pair.content = str;
 		}
 
-		if (mCurrent.type == JackToken::None && (!mCurrent.content.empty()))
-			mCurrent.type = JackToken::Id; // nothing else but Identifier
+		if (pair.type == JackToken::None && (!pair.content.empty()))
+			pair.type = JackToken::Id; // nothing else but Identifier
+	}
 
+	bool jfile::Next()
+	{
+		mCurrent = mNext;
+		FillPair(mNext);
 		return mCurrent.type != JackToken::None;
+	}
+
+	const jpair& jfile::PeekNext()
+	{
+		return mNext;
 	}
 
 	bool jfile::CheckContent()
@@ -124,7 +132,8 @@ namespace jcom
 
 	bool jfile::Available()
 	{
-		return !mFile.eof();
+		// check if the file is complete, and if we stil have one symbol left in the "buffer"
+		return (!mFile.eof()) || !(mCurrent.type == JackToken::None);
 	}
 
 }

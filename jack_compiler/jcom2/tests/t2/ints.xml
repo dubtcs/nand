@@ -51,40 +51,41 @@
 				<keyword>return</keyword>
 				<symbol>;</symbol>
 			</returnStatement>
-			<symbol>}</symbol>
 		</statements>
-		<subroutineDec>
-			<keyword>function</keyword>
-			<keyword>void</keyword>
-			<identifier>more</identifier>
-			<symbol>(</symbol>
-			<symbol>)</symbol>
-			<symbol>{</symbol>
-			<varDec>
-				<keyword>var</keyword>
-				<keyword>boolean</keyword>
+		<symbol>}</symbol>
+	</subroutineDec>
+	<subroutineDec>
+		<keyword>function</keyword>
+		<keyword>void</keyword>
+		<identifier>more</identifier>
+		<symbol>(</symbol>
+		<symbol>)</symbol>
+		<symbol>{</symbol>
+		<varDec>
+			<keyword>var</keyword>
+			<keyword>boolean</keyword>
+			<identifier>b</identifier>
+			<symbol>;</symbol>
+		</varDec>
+		<statements>
+			<ifStatement>
+				<keyword>if</keyword>
+				<symbol>(</symbol>
 				<identifier>b</identifier>
-				<symbol>;</symbol>
-			</varDec>
-			<statements>
-				<ifStatement>
-					<keyword>if</keyword>
-					<symbol>(</symbol>
-					<identifier>b</identifier>
-					<symbol>)</symbol>
-					<symbol>{</symbol>
-					<symbol>}</symbol>
-				</ifStatement>
+				<symbol>)</symbol>
+				<symbol>{</symbol>
+				<symbol>}</symbol>
+				<symbol>}</symbol>
 				<keyword>else</keyword>
 				<symbol>{</symbol>
 				<symbol>}</symbol>
-			</statements>
-			<statements>
-				<returnStatement>
-					<keyword>return</keyword>
-					<symbol>;</symbol>
-				</returnStatement>
-				<symbol>}</symbol>
-			</statements>
-			<symbol>}</symbol>
-		</subroutineDec>
+			</ifStatement>
+			<returnStatement>
+				<keyword>return</keyword>
+				<symbol>;</symbol>
+			</returnStatement>
+		</statements>
+		<symbol>}</symbol>
+	</subroutineDec>
+	<symbol>}</symbol>
+</class>

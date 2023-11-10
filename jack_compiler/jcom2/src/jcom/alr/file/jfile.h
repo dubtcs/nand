@@ -23,12 +23,15 @@ namespace jcom
 	public:
 		bool Available();
 		bool Next();
+		const jpair& PeekNext();
 		jpair& Get();
 	protected:
+		void FillPair(jpair& pair);
 		bool CheckContent();
 	protected:
 		size_t mCursor{ 0 };
 		jpair mCurrent{};
+		jpair mNext{};
 		std::ifstream& mFile;
 		std::string mContent{};
 	};

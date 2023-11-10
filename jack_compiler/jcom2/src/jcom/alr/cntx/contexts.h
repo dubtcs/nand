@@ -30,6 +30,7 @@ namespace jcom
 	{
 		token breaker{""};
 		std::unordered_map<token, jdesc> contextOverrides;
+		bool saveBreaker{ false };
 	};
 
 	using contextmap = std::unordered_map<jdesc, jcontext&>;
