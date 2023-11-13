@@ -18,8 +18,10 @@ namespace jcom
 	protected:
 		void ParseToken();
 
-		void IncTree(jdesc descriptor);
+		void IncTree();
+		void PushTree(jdesc desc);
 		void DecTree();
+		void PopTree();
 
 		void WriteToken();
 		void WriteLine(const std::string& str);

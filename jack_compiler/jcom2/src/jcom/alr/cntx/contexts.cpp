@@ -19,22 +19,40 @@ namespace jcom
 	{
 		"}",
 		{ // conditional contexts
-			{ "if", jdesc::Statement },
-			{ "let", jdesc::Statement },
-			{ "do", jdesc::Statement },
-			{ "while", jdesc::Statement },
+			{ "if",		jdesc::Statement },
+			{ "let",	jdesc::Statement },
+			{ "do",		jdesc::Statement },
+			{ "while",	jdesc::Statement },
 			{ "return", jdesc::Statement },
+			{ "(",		jdesc::ParameterList}
 		}
 	};
 
 	jcontext jParameterListContext
 	{
-		")", {}
+		")", {}, true
 	};
 
 	jcontext jStatementContext
 	{
 		"}", {}
+	};
+
+	jcontext jIfStatementContext
+	{
+		"}",
+		{
+			{"{", jdesc::IfNested}
+		},
+	};
+
+	jcontext jIfNestedContext
+	{
+		"}",
+		{
+
+		},
+		true
 	};
 
 	jcontext jReturnContext
@@ -60,7 +78,8 @@ namespace jcom
 		{ jdesc::SubroutineBody,	jStatementContext },
 
 		{ jdesc::Statement,			jStatementContext },
-		{ jdesc::IfStatement,		jStatementContext },
+		{ jdesc::IfStatement,		jIfStatementContext },
+		{ jdesc::IfNested,			jIfNestedContext },	
 		{ jdesc::WhileStatement ,	jStatementContext },
 		{ jdesc::DoStatement,		jReturnContext },
 		{ jdesc::LetStatement,		jReturnContext },

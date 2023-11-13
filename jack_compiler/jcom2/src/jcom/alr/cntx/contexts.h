@@ -21,6 +21,7 @@ namespace jcom
 		LetStatement,
 		WhileStatement,
 		IfStatement,
+		IfNested,
 		ReturnStatement,
 		Expression,
 		ExpressionList
@@ -28,9 +29,9 @@ namespace jcom
 
 	struct jcontext
 	{
-		token breaker{""};
+		token breaker{""}; // token used to mark the end of the context
 		std::unordered_map<token, jdesc> contextOverrides;
-		bool saveBreaker{ false };
+		bool insideBreakers{ false }; // place the opening tags inside the opener/closer keywords
 	};
 
 	using contextmap = std::unordered_map<jdesc, jcontext&>;

@@ -33,12 +33,17 @@ namespace jcom
 
 						if (c == '/') // comments
 						{
-							if (mContent[mCursor + 1] == '/')
+							if (mCursor < (mContent.size() - 1))
 							{
-								mCursor = mContent.size();
-								CheckContent();
-								continue;
+								const char& nch{ mContent[mCursor + 1] };
+								if ((nch == '/') || (nch == '*'))
+								{
+									mCursor = mContent.size();
+									CheckContent();
+									continue;
+								}
 							}
+							
 						}
 
 						if (gKeywords.contains(token{ c }))
