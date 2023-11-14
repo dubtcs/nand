@@ -16,14 +16,14 @@
 		<parameterList>
 		</parameterList>
 		<symbol>)</symbol>
-		<symbol>{</symbol>
-		<varDec>
-			<keyword>var</keyword>
-			<identifier>SquareGame</identifier>
-			<identifier>game</identifier>
-			<symbol>;</symbol>
-		</varDec>
-		<statements>
+		<subroutineBody>
+			<symbol>{</symbol>
+			<varDec>
+				<keyword>var</keyword>
+				<identifier>SquareGame</identifier>
+				<identifier>game</identifier>
+				<symbol>;</symbol>
+			</varDec>
 			<letStatement>
 				<keyword>let</keyword>
 				<identifier>game</identifier>
@@ -37,6 +37,8 @@
 				<symbol>.</symbol>
 				<identifier>run</identifier>
 				<symbol>(</symbol>
+				<expressionList>
+				</expressionList>
 				<symbol>)</symbol>
 				<symbol>;</symbol>
 			</doStatement>
@@ -46,6 +48,8 @@
 				<symbol>.</symbol>
 				<identifier>dispose</identifier>
 				<symbol>(</symbol>
+				<expressionList>
+				</expressionList>
 				<symbol>)</symbol>
 				<symbol>;</symbol>
 			</doStatement>
@@ -53,8 +57,8 @@
 				<keyword>return</keyword>
 				<symbol>;</symbol>
 			</returnStatement>
-		</statements>
-		<symbol>}</symbol>
+			<symbol>}</symbol>
+		</subroutineBody>
 	</subroutineDec>
 	<subroutineDec>
 		<keyword>function</keyword>
@@ -64,14 +68,14 @@
 		<parameterList>
 		</parameterList>
 		<symbol>)</symbol>
-		<symbol>{</symbol>
-		<varDec>
-			<keyword>var</keyword>
-			<keyword>boolean</keyword>
-			<identifier>b</identifier>
-			<symbol>;</symbol>
-		</varDec>
-		<statements>
+		<subroutineBody>
+			<symbol>{</symbol>
+			<varDec>
+				<keyword>var</keyword>
+				<keyword>boolean</keyword>
+				<identifier>b</identifier>
+				<symbol>;</symbol>
+			</varDec>
 			<ifStatement>
 				<keyword>if</keyword>
 				<symbol>(</symbol>
@@ -79,16 +83,6 @@
 				<symbol>)</symbol>
 				<symbol>{</symbol>
 				<statements>
-					<ifStatement>
-						<keyword>if</keyword>
-						<symbol>(</symbol>
-						<identifier>b</identifier>
-						<symbol>)</symbol>
-						<symbol>{</symbol>
-						<statements>
-						</statements>
-						<symbol>}</symbol>
-					</ifStatement>
 				</statements>
 				<symbol>}</symbol>
 				<keyword>else</keyword>
@@ -101,8 +95,8 @@
 				<keyword>return</keyword>
 				<symbol>;</symbol>
 			</returnStatement>
-		</statements>
-		<symbol>}</symbol>
+			<symbol>}</symbol>
+		</subroutineBody>
 	</subroutineDec>
 	<symbol>}</symbol>
 </class>

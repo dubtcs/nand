@@ -24,7 +24,8 @@ namespace jcom
 			{ "do",		jdesc::Statement },
 			{ "while",	jdesc::Statement },
 			{ "return", jdesc::Statement },
-			{ "(",		jdesc::ParameterList}
+			{ "{",		jdesc::SubroutineBody },
+			{ "(",		jdesc::ParameterList }
 		}
 	};
 
@@ -35,7 +36,10 @@ namespace jcom
 
 	jcontext jStatementContext
 	{
-		"}", {}
+		"}", 
+		{
+			{"(", jdesc::ExpressionList},
+		}
 	};
 
 	jcontext jIfStatementContext
@@ -57,12 +61,20 @@ namespace jcom
 
 	jcontext jReturnContext
 	{
-		";", {}
+		";",
+		{
+			{"(", jdesc::ExpressionList},
+		}
 	};
 
 	jcontext jExpressionContext
 	{
 		";", {}
+	};
+
+	jcontext jExpressionListContext
+	{
+		")", {}, true
 	};
 
 	jcontext jNoneContext{};
@@ -86,7 +98,7 @@ namespace jcom
 		{ jdesc::ReturnStatement,	jReturnContext },
 
 		{ jdesc::Expression,		jExpressionContext },
-		{ jdesc::ExpressionList,	jExpressionContext },
+		{ jdesc::ExpressionList,	jExpressionListContext },
 	};
 
 }

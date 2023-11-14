@@ -26,7 +26,6 @@ namespace jcom
 		{"let",			jdesc::LetStatement},
 		{"do",			jdesc::DoStatement},
 		{"var",			jdesc::VarDec}
-		//{"=",			jdesc::Expression},
 	};
 
 	static std::unordered_map<jdesc, token> gDescTokens
@@ -43,6 +42,7 @@ namespace jcom
 		{jdesc::DoStatement,		"doStatement"},
 		{jdesc::LetStatement,		"letStatement"},
 		{jdesc::VarDec,				"varDec"},
+		{jdesc::ExpressionList,		"expressionList"},
 		{jdesc::Expression,			"expression"},
 		{jdesc::ParameterList,		"parameterList"}
 	};
@@ -189,6 +189,15 @@ namespace jcom
 						WriteToken();
 						PopTree();
 					}
+					if (mStack.top() == jdesc::Subroutine)
+					{
+						// Check if the next keyword is usable for a subroutine body
+						// Like, if it's function, method, or contructor, break the context
+						if (!gContexts.at(mStack.top()).contextOverrides.contains(mFile.PeekNext().content))
+						{
+							PopTree();
+						}
+					}
 					break;
 				}
 			}
@@ -199,120 +208,3 @@ namespace jcom
 	}
 
 }
-
-
-
-
-
-
-
-
-
-/*
-
-V2
-bool opening{ false };
-			bool closing{ false };
-
-			// The current context has this token marked as an override for a specific tag
-			if (context.contextOverrides.contains(tk))
-			{
-				mStack.push(context.contextOverrides.at(tk));
-				context = gContexts.at(mStack.top());
-				opening = true;
-			}
-			// The current token is a universal keyword that has no overrides
-			else if (gKeywordDescs.contains(tk))
-			{
-				mStack.push(gKeywordDescs.at(tk));
-				context = gContexts.at(mStack.top());
-				opening = true;
-			}
-			// The token might be the breaker keyword
-			else if(tk == context.breaker)
-			{
-				closing = true;
-				if (mStack.top() == jdesc::Statement)
-				{
-					const token& tk2{ mFile.PeekNext().content };
-					if (tk2 == "else")
-						closing = false;
-				}
-			}
-
-			// Opening keyword found, but check for tag append or prepend
-			if (opening)
-			{
-				// The opening tags go after the current symbol
-				if (context.insideBreakers)
-				{
-					WriteToken();
-					IncTree();
-				}
-				else
-				{
-					IncTree();
-					WriteToken();
-				}
-			}
-			else if (closing)
-			{
-				if (context.insideBreakers)
-				{
-					PopTree();
-					WriteToken();
-				}
-				else
-				{
-					WriteToken();
-					PopTree();
-				}
-			}
-			// Standard token. Write it
-			else
-				WriteToken();
-
-			mFile.Next();
-
-*/
-
-//if (context.contextOverrides.contains(tk)) // check for generic container keyword
-			//{
-			//	jcontext& nextContext{ gContexts.at(context.contextOverrides.at(tk)) };
-			//	if (!nextContext.insideBreakers) // check if syntax wants the opener and closer brackets before or after the symbol starting it
-			//	{
-			//		IncTree(context.contextOverrides.at(tk));
-			//		context = gContexts.at(context.contextOverrides.at(tk));
-			//	}
-			//	else
-			//		insideBounds = true;
-			//}
-
-			//if (gKeywordDescs.contains(tk))
-			//	IncTree(gKeywordDescs.at(tk));
-
-			//if (mStack.top() == jdesc::Statement)
-			//	if (tk == context.breaker)
-			//		DecTree();
-			//WriteToken();
-
-			//if (insideBounds)
-			//{
-			//	IncTree(context.contextOverrides.at(tk));
-			//	context = gContexts.at(context.contextOverrides.at(tk));
-			//}
-
-			//if (tk == context.breaker)
-			//{
-			//	if (mStack.top() == jdesc::IfStatement) // maybe add context continues? IfStatement might be the only weird one here
-			//	{
-			//		const token& tk2{ mFile.PeekNext().content };
-			//		if (tk2 != "else")
-			//			DecTree();
-			//		else
-			//			WriteToken();
-			//	}
-			//	else
-			//		DecTree();
-			//}
-			// mFile.Next();
