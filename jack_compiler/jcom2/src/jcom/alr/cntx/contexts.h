@@ -24,7 +24,9 @@ namespace jcom
 		IfNested,
 		ReturnStatement,
 		Expression,
-		ExpressionList
+		ExpressionList,
+		Term,
+		BREAKER
 	};
 
 	struct jcontext

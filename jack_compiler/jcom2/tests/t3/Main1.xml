@@ -18,49 +18,49 @@
 		<symbol>)</symbol>
 		<subroutineBody>
 			<symbol>{</symbol>
-			<varDec>
+			<classVarDec>
 				<keyword>var</keyword>
 				<identifier>SquareGame</identifier>
 				<identifier>game</identifier>
 				<symbol>;</symbol>
-			</varDec>
-			<letStatement>
-				<keyword>let</keyword>
-				<identifier>game</identifier>
-				<symbol>=</symbol>
-				<identifier>game</identifier>
-				<symbol>;</symbol>
-			</letStatement>
-			<doStatement>
-				<keyword>do</keyword>
-				<identifier>game</identifier>
-				<symbol>.</symbol>
-				<identifier>run</identifier>
-				<symbol>(</symbol>
-				<expressionList>
-				</expressionList>
-				<symbol>)</symbol>
-				<symbol>;</symbol>
-			</doStatement>
-			<doStatement>
-				<keyword>do</keyword>
-				<identifier>game</identifier>
-				<symbol>.</symbol>
-				<identifier>dispose</identifier>
-				<symbol>(</symbol>
-				<expressionList>
-				</expressionList>
-				<symbol>)</symbol>
-				<symbol>;</symbol>
-			</doStatement>
-			<returnStatement>
-				<keyword>return</keyword>
-				<symbol>;</symbol>
-			</returnStatement>
+			</classVarDec>
+			<statements>
+				<letStatement>
+					<keyword>let</keyword>
+					<identifier>game</identifier>
+					<symbol>=</symbol>
+					<identifier>game</identifier>
+					<symbol>;</symbol>
+				</letStatement>
+				<doStatement>
+					<keyword>do</keyword>
+					<identifier>game</identifier>
+					<symbol>.</symbol>
+					<identifier>run</identifier>
+					<symbol>(</symbol>
+					<expressionList>
+					</expressionList>
+					<symbol>)</symbol>
+					<symbol>;</symbol>
+				</doStatement>
+				<doStatement>
+					<keyword>do</keyword>
+					<identifier>game</identifier>
+					<symbol>.</symbol>
+					<identifier>dispose</identifier>
+					<symbol>(</symbol>
+					<expressionList>
+					</expressionList>
+					<symbol>)</symbol>
+					<symbol>;</symbol>
+				</doStatement>
+				<returnStatement>
+					<keyword>return</keyword>
+					<symbol>;</symbol>
+				</returnStatement>
+			</statements>
 			<symbol>}</symbol>
 		</subroutineBody>
-	</subroutineDec>
-	<subroutineDec>
 		<keyword>function</keyword>
 		<keyword>void</keyword>
 		<identifier>more</identifier>
@@ -70,33 +70,24 @@
 		<symbol>)</symbol>
 		<subroutineBody>
 			<symbol>{</symbol>
-			<varDec>
+			<classVarDec>
 				<keyword>var</keyword>
 				<keyword>boolean</keyword>
 				<identifier>b</identifier>
 				<symbol>;</symbol>
-			</varDec>
-			<ifStatement>
-				<keyword>if</keyword>
-				<symbol>(</symbol>
-				<identifier>b</identifier>
-				<symbol>)</symbol>
-				<symbol>{</symbol>
-				<statements>
-				</statements>
-				<symbol>}</symbol>
-				<keyword>else</keyword>
-				<symbol>{</symbol>
-				<statements>
-				</statements>
-				<symbol>}</symbol>
-			</ifStatement>
-			<returnStatement>
-				<keyword>return</keyword>
-				<symbol>;</symbol>
-			</returnStatement>
+			</classVarDec>
+			<statements>
+			</statements>
 			<symbol>}</symbol>
 		</subroutineBody>
+		<keyword>else</keyword>
+		<subroutineBody>
+			<symbol>{</symbol>
+			<symbol>}</symbol>
+		</subroutineBody>
+		<keyword>return</keyword>
+		<symbol>;</symbol>
 	</subroutineDec>
+	<symbol>}</symbol>
 	<symbol>}</symbol>
 </class>

@@ -69,12 +69,17 @@ namespace jcom
 
 	jcontext jExpressionContext
 	{
-		";", {}
+		")", {}
 	};
 
 	jcontext jExpressionListContext
 	{
 		")", {}, true
+	};
+
+	jcontext jTermContext
+	{
+		")", {}
 	};
 
 	jcontext jNoneContext{};
@@ -99,6 +104,9 @@ namespace jcom
 
 		{ jdesc::Expression,		jExpressionContext },
 		{ jdesc::ExpressionList,	jExpressionListContext },
+
+		{ jdesc::Term,				jTermContext }
+
 	};
 
 }

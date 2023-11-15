@@ -1,55 +1,123 @@
 
 #include "alr.h"
 
-#include <unordered_map>
-#include <unordered_set>
-
 #include <iostream>
-
-// The most convoluted state machine in the world
-// this is a state machine without any of the ease of use of a state machine lmfao
 
 namespace jcom
 {
 
-	static std::unordered_map<token, jdesc> gKeywordDescs
-	{
-		{"class",		jdesc::Class},
-		{"field",		jdesc::ClassVarDec},
-		{"static",		jdesc::ClassVarDec},
-		{"function",	jdesc::Subroutine},
-		{"method",		jdesc::Subroutine},
-		{"contructor",	jdesc::Subroutine},
-		{"if",			jdesc::IfStatement},
-		{"return",		jdesc::ReturnStatement},
-		{"while",		jdesc::WhileStatement},
-		{"let",			jdesc::LetStatement},
-		{"do",			jdesc::DoStatement},
-		{"var",			jdesc::VarDec}
-	};
+	//const emap2 jalr::mFnPtrs{
+	//	{"class", &jalr::ParseClass}
+	//};
 
-	static std::unordered_map<jdesc, token> gDescTokens
+	const cmap jalr::mContexts
 	{
-		{jdesc::Class,				"class"},
-		{jdesc::ClassVarDec,		"classVarDec"},
-		{jdesc::Subroutine,			"subroutineDec"},
-		{jdesc::SubroutineBody,		"subroutineBody"},
-		{jdesc::Statement,			"statements"},
-		{jdesc::IfNested,			"statements"},
-		{jdesc::ReturnStatement,	"returnStatement"},
-		{jdesc::IfStatement,		"ifStatement"},
-		{jdesc::WhileStatement,		"whileStatement"},
-		{jdesc::DoStatement,		"doStatement"},
-		{jdesc::LetStatement,		"letStatement"},
-		{jdesc::VarDec,				"varDec"},
-		{jdesc::ExpressionList,		"expressionList"},
-		{jdesc::Expression,			"expression"},
-		{jdesc::ParameterList,		"parameterList"}
-	};
+		{ jdesc::Class, 
+			{
+				{"field", jdesc::ClassVarDec},
+				{"static", jdesc::ClassVarDec},
+				{"function", jdesc::Subroutine},
+				{"constructor", jdesc::Subroutine},
+				{"method", jdesc::Subroutine},
 
-	enum class jTagGate
-	{
-		None, Open, Close
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::ClassVarDec,
+			{
+				{";", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::Subroutine,
+			{
+				{"var", jdesc::VarDec},
+				{"(", jdesc::ParameterList},
+				{"{", jdesc::SubroutineBody},
+
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::ParameterList,
+			{
+				{")", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::VarDec,
+			{
+				{";", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::SubroutineBody,
+			{
+				{"var", jdesc::VarDec},
+
+				{"let", jdesc::Statement},
+				{"do", jdesc::Statement},
+				{"if", jdesc::Statement},
+				{"while", jdesc::Statement},
+				{"return", jdesc::Statement},
+
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::Statement,
+			{
+				{"let", jdesc::LetStatement},
+				{"do", jdesc::DoStatement},
+				{"if", jdesc::IfStatement},
+				{"while", jdesc::WhileStatement},
+				{"return", jdesc::ReturnStatement},
+
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::LetStatement,
+			{
+				{";", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::DoStatement,
+			{
+				{";", jdesc::BREAKER},
+				{"(", jdesc::ExpressionList},
+			}
+		},
+		{ jdesc::IfStatement,
+			{
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::WhileStatement,
+			{
+				{"}", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::ReturnStatement,
+			{
+				{";", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::ExpressionList,
+			{
+				{")", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::Expression,
+			{
+				{"+", jdesc::Expression},
+				{"-", jdesc::Expression},
+				{"*", jdesc::Expression},
+				{"/", jdesc::Expression},
+
+				{"&", jdesc::Expression},
+				{"|", jdesc::Expression},
+
+				{">", jdesc::Expression},
+				{"<", jdesc::Expression},
+
+				{"=", jdesc::Expression},
+			}
+		},
 	};
 
 	jalr::jalr(std::ifstream& inFile, std::ofstream& outFile) :
@@ -57,154 +125,285 @@ namespace jcom
 		mOutFile{ outFile },
 		mFile{ inFile }
 	{
-		mStack.push(jdesc::None);
 		ParseToken();
-	}
-
-	void jalr::WriteLine(const std::string& str)
-	{
-		mOutFile << str << "\n";
-	}
-
-	void jalr::WriteToken()
-	{
-		jpair& cur{ mFile.Get() };
-		WriteLine( mTreeString + gTokenFlags.at(cur.type).opener + cur.content + gTokenFlags.at(cur.type).closer );
-	}
-
-	void jalr::PushTree(jdesc descriptor)
-	{
-		mStack.push(descriptor);
-		IncTree();
-	}
-
-	void jalr::IncTree()
-	{
-		WriteLine(mTreeString + "<" + gDescTokens.at(mStack.top()) + ">");
-		mTreeString += '\t';
-	}
-
-	void jalr::PopTree()
-	{
-		DecTree();
-		mStack.pop();
-	}
-
-	void jalr::DecTree()
-	{
-		mTreeString.pop_back();
-		WriteLine(mTreeString + "</" + gDescTokens.at(mStack.top()) + ">");
 	}
 
 	void jalr::ParseToken()
 	{
-		int32_t j{ 0 };
 		while (mFile.Available())
 		{
-			jcontext context{ gContexts.at(mStack.top()) };
-			jpair pair{ mFile.Get() };
-			token tk{ pair.content };
-
-			jTagGate tokenState{ jTagGate::None };
-
-			// Current context overrides current token
-			if (context.contextOverrides.contains(tk))
+			const token& tk{ mFile.Get().content };
+			/*if (mBruh.contains(tk))
 			{
-				// Add the context to the stack and make it the new active context
-				mStack.push(context.contextOverrides.at(tk));
-				context = gContexts.at(mStack.top());
-				tokenState = jTagGate::Open;
-				if (mStack.top() == jdesc::Statement) // could have used standard enums with a bitwise and here :/
-				{
-					IncTree();
-				}
-			}
-
-			// Current token is a keyword that isn't overriden
-			if (gKeywordDescs.contains(tk))
+				WriteLine("Shit");
+				auto j = mFnPtrs.at(tk);
+				std::invoke(j, this);
+			}*/
+			if (tk == "class")
 			{
-				mStack.push(gKeywordDescs.at(tk));
-				context = gContexts.at(mStack.top());
-				tokenState = jTagGate::Open;
+				ParseClass();
 			}
-			// Current token is the current context's breaker
-			else if (tk == context.breaker)
-			{
-				// Statements have a catch with ELSE
-				if (mStack.top() == jdesc::IfStatement)
-				{
-					// Next keyword is else, so we keep the statement
-					if (mFile.PeekNext().content == "else")
-						tokenState = jTagGate::None;
-					else
-						tokenState = jTagGate::Close;
-				}
-				else
-				{
-					// Statement or nested statement inside another statement
-					if (mStack.top() == jdesc::Statement || mStack.top() == jdesc::IfNested)
-					{
-						if ((mStack.top() == jdesc::IfNested) && (mFile.PeekNext().content == "else"))
-							tokenState = jTagGate::None;
-						else
-							tokenState = jTagGate::Close;
-						PopTree();
-						context = gContexts.at(mStack.top());
-					}
-					else
-						tokenState = jTagGate::Close;
-				}
-			}
-
-			switch (tokenState)
-			{
-				case(jTagGate::None):
-				{
-					WriteToken();
-					break;
-				}
-				case(jTagGate::Open):
-				{
-					if (context.insideBreakers)
-					{
-						WriteToken();
-						IncTree();
-					}
-					else
-					{
-						IncTree();
-						WriteToken();
-					}
-					break;
-				}
-				case(jTagGate::Close):
-				{
-					if (context.insideBreakers)
-					{
-						PopTree();
-						WriteToken();
-					}
-					else
-					{
-						WriteToken();
-						PopTree();
-					}
-					if (mStack.top() == jdesc::Subroutine)
-					{
-						// Check if the next keyword is usable for a subroutine body
-						// Like, if it's function, method, or contructor, break the context
-						if (!gContexts.at(mStack.top()).contextOverrides.contains(mFile.PeekNext().content))
-						{
-							PopTree();
-						}
-					}
-					break;
-				}
-			}
-
 			mFile.Next();
-
 		}
+	}
+
+	void jalr::ParseClass()
+	{
+		IncTree("<class>");
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::Class) };
+			switch (entry)
+			{
+				case(jdesc::ClassVarDec): { ParseClassVar();		break; }
+				case(jdesc::Subroutine): { ParseSubroutine();	break; }
+				default: { WriteTokenNext(); break; }
+			}
+		}
+		DecTree("</class>");
+	}
+
+	void jalr::ParseClassVar()
+	{
+		IncTree("<classVarDec>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::ClassVarDec) };
+			breaker = (entry == jdesc::BREAKER);
+			WriteToken();
+			mFile.Next();
+		}
+		DecTree("</classVarDec>");
+	}
+
+	void jalr::ParseSubroutine()
+	{
+		IncTree("<subroutineDec>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			const token& tk{ mFile.Get().content };
+			jdesc entry{ GetEntrypoint(jdesc::Subroutine) };
+
+			switch (entry)
+			{
+				case(jdesc::VarDec):		{ ParseSubroutineVar(); break; }
+				case(jdesc::ParameterList): { ParseParameterList(); break; }
+				case(jdesc::SubroutineBody):{ ParseSubroutineBody(); break; }
+				case(jdesc::BREAKER):		{ breaker = true; break; }
+				default:					{ WriteTokenNext(); break; } // should never get this if syntax is correct
+			}
+		}
+		DecTree("</subroutineDec>");
+	}
+
+	void jalr::ParseSubroutineVar()
+	{
+		IncTree("<varDec>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::VarDec) };
+			breaker = (entry == jdesc::BREAKER);
+			WriteToken();
+			mFile.Next();
+		}
+		DecTree("</varDec>");
+	}
+
+	void jalr::ParseParameterList()
+	{
+		WriteToken();
+		IncTree("<parameterList>");
+		mFile.Next();
+
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::ParameterList) };
+
+			if (entry == jdesc::BREAKER)
+				break;
+
+			WriteToken();
+			mFile.Next();
+		}
+		DecTree("</parameterList>");
+
+		WriteToken();
+		mFile.Next();
+	}
+
+	void jalr::ParseSubroutineBody()
+	{
+		IncTree("<subroutineBody>");
+		WriteTokenNext();
+
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::SubroutineBody) };
+			switch (entry)
+			{
+				case(jdesc::VarDec): { ParseClassVar(); break; }
+				case(jdesc::Statement): { ParseStatements(); break; }
+				case(jdesc::BREAKER): { breaker = true; break; }
+				default: { WriteTokenNext(); break; }
+			}
+		}
+
+		WriteTokenNext();
+		DecTree("</subroutineBody>");
+	}
+
+	void jalr::ParseStatements()
+	{
+		IncTree("<statements>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::Statement) };
+			switch (entry)
+			{
+				case(jdesc::LetStatement): {ParseLetStatement(); break; }
+				case(jdesc::DoStatement): {ParseDoStatement(); break; }
+				case(jdesc::ReturnStatement): {ParseReturnStatement(); break; }
+				case(jdesc::BREAKER): { breaker = true; break; }
+				default: { mFile.Next(); break; }
+			}
+		}
+		DecTree("</statements>");
+	}
+
+	void jalr::ParseLetStatement()
+	{
+		IncTree("<letStatement>");
+
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::LetStatement) };
+			WriteTokenNext();
+			if (entry == jdesc::BREAKER)
+				break;
+		}
+
+		DecTree("</letStatement>");
+	}
+
+	void jalr::ParseDoStatement()
+	{
+		IncTree("<doStatement>");
+
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::DoStatement) };
+			if (entry == jdesc::ExpressionList)
+				ParseExpressionList();
+			else
+				WriteTokenNext();
+			if (entry == jdesc::BREAKER)
+				break;
+		}
+
+		DecTree("</doStatement>");
+	}
+
+	void jalr::ParseReturnStatement()
+	{
+		IncTree("<returnStatement>");
+
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::ReturnStatement) };
+			WriteTokenNext();
+			if (entry == jdesc::BREAKER)
+				break;
+		}
+
+		DecTree("</returnStatement>");
+	}
+
+	void jalr::ParseExpressionList()
+	{
+		WriteTokenNext();
+		IncTree("<expressionList>");
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::ExpressionList) };
+			if (entry == jdesc::BREAKER)
+				break;
+			else
+				ParseExpression();
+			WriteTokenNext();
+		}
+		DecTree("</expressionList>");
+		WriteTokenNext();
+	}
+
+	void jalr::ParseExpression()
+	{
+		IncTree("<expression>");
+		while (mFile.Available())
+		{
+			jdesc entry{ GetEntrypoint(jdesc::Expression) };
+			if (entry != jdesc::Expression)
+			{
+				// TODO
+			}
+		}
+		DecTree("</expression>");
+	}
+
+	// dep, use GetEntrypoint()
+	bool jalr::ContextContains(entrymap& entries, jdesc context)
+	{
+		const token& tk{ mFile.Get().content };
+		if (entries.contains(context))
+			return entries.at(context).contains(tk);
+		return false;
+	}
+
+	jdesc jalr::GetEntrypoint(jdesc context)
+	{
+		jdesc rdesc{ jdesc::None };
+		if (mContexts.contains(context))
+		{
+			const emap& entries{ mContexts.at(context) };
+			const token& tk{ mFile.Get().content };
+			if (entries.contains(tk))
+				rdesc = entries.at(tk);
+		}
+		return rdesc;
+	}
+
+	void jalr::IncTree(const std::string& label)
+	{
+		WriteLine(label);
+		mTreeString += '\t';
+	}
+
+	void jalr::DecTree(const std::string& label)
+	{
+		mTreeString.pop_back();
+		WriteLine(label);
+	}
+
+	void jalr::WriteLine(const std::string& content)
+	{
+		mOutFile << mTreeString + content << '\n';
+	}
+
+	void jalr::WriteToken()
+	{
+		jpair& pair{ mFile.Get() };
+		const Tag& tag{ gTokenFlags.at(pair.type) };
+		WriteLine(tag.opener + pair.content + tag.closer);
+	}
+	
+	void jalr::WriteTokenNext()
+	{
+		WriteToken();
+		mFile.Next();
 	}
 
 }
