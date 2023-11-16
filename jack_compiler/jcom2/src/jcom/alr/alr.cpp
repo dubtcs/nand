@@ -79,11 +79,14 @@ namespace jcom
 		{ jdesc::DoStatement,
 			{
 				{";", jdesc::BREAKER},
-				{"(", jdesc::ExpressionList},
+				{"(", jdesc::SubroutineCall},
+				{".", jdesc::SubroutineCall}
 			}
 		},
 		{ jdesc::IfStatement,
 			{
+				{"{", jdesc::Statement},
+				{"(", jdesc::Expression},
 				{"}", jdesc::BREAKER},
 			}
 		},
@@ -116,6 +119,22 @@ namespace jcom
 				{"<", jdesc::Expression},
 
 				{"=", jdesc::Expression},
+				{"(", jdesc::Term}
+			}
+		},
+		{ jdesc::Term,
+			{
+				{"-", jdesc::Term},
+				{"~", jdesc::Term},
+				{"(", jdesc::Expression},
+				//{")", jdesc::BREAKER}, // don't need this as only the brackets [] have a special rule
+				{"]", jdesc::BREAKER},
+			}
+		},
+		{ jdesc::SubroutineCall,
+			{
+				{"(", jdesc::ExpressionList},
+				{")", jdesc::BREAKER }
 			}
 		},
 	};
@@ -125,7 +144,9 @@ namespace jcom
 		mOutFile{ outFile },
 		mFile{ inFile }
 	{
+		IncTree("<tokens>");
 		ParseToken();
+		DecTree("</tokens>");
 	}
 
 	void jalr::ParseToken()
@@ -195,6 +216,7 @@ namespace jcom
 				default:					{ WriteTokenNext(); break; } // should never get this if syntax is correct
 			}
 		}
+		mFile.Next();
 		DecTree("</subroutineDec>");
 	}
 
@@ -245,14 +267,14 @@ namespace jcom
 			jdesc entry{ GetEntrypoint(jdesc::SubroutineBody) };
 			switch (entry)
 			{
-				case(jdesc::VarDec): { ParseClassVar(); break; }
+				case(jdesc::VarDec): { ParseSubroutineVar(); break; }
 				case(jdesc::Statement): { ParseStatements(); break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
 				default: { WriteTokenNext(); break; }
 			}
 		}
 
-		WriteTokenNext();
+		WriteToken();
 		DecTree("</subroutineBody>");
 	}
 
@@ -265,9 +287,10 @@ namespace jcom
 			jdesc entry{ GetEntrypoint(jdesc::Statement) };
 			switch (entry)
 			{
-				case(jdesc::LetStatement): {ParseLetStatement(); break; }
-				case(jdesc::DoStatement): {ParseDoStatement(); break; }
-				case(jdesc::ReturnStatement): {ParseReturnStatement(); break; }
+				case(jdesc::LetStatement): { ParseLetStatement(); break; }
+				case(jdesc::DoStatement): { ParseDoStatement(); break; }
+				case(jdesc::ReturnStatement): { ParseReturnStatement(); break; }
+				case(jdesc::IfStatement): {ParseIfStatement(); break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
 				default: { mFile.Next(); break; }
 			}
@@ -297,8 +320,8 @@ namespace jcom
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::DoStatement) };
-			if (entry == jdesc::ExpressionList)
-				ParseExpressionList();
+			if (entry == jdesc::SubroutineCall)
+				ParseSubroutineCall();
 			else
 				WriteTokenNext();
 			if (entry == jdesc::BREAKER)
@@ -323,6 +346,40 @@ namespace jcom
 		DecTree("</returnStatement>");
 	}
 
+	void jalr::ParseIfStatement()
+	{
+		IncTree("<ifStatement>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::IfStatement) };
+			WriteTokenNext();
+
+			switch (entry)
+			{
+				case(jdesc::Expression): { ParseExpression(); break; }
+				case(jdesc::Statement): { ParseStatements(); break; }
+				case(jdesc::BREAKER): {
+					if (mFile.Get().content == "else")
+					{
+						//WriteTokenNext(); // write } and move
+						WriteTokenNext(); // write else and move
+						WriteTokenNext(); // write { and move
+						ParseStatements();// start parsing statements
+					}
+					else
+					{
+						//WriteTokenNext();
+						breaker = true;
+					}
+					break;
+				}
+				//default: //WriteTokenNext();
+			}
+		}
+		DecTree("</ifStatement>");
+	}
+
 	void jalr::ParseExpressionList()
 	{
 		WriteTokenNext();
@@ -343,15 +400,90 @@ namespace jcom
 	void jalr::ParseExpression()
 	{
 		IncTree("<expression>");
-		while (mFile.Available())
+		bool theseFound{ false };
+		jdesc entry{ GetEntrypoint(jdesc::Expression) };
+		if (entry != jdesc::BREAKER)
+			ParseTerm();
+		DecTree("</expression>");
+
+
+		/*while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::Expression) };
 			if (entry != jdesc::Expression)
+				ParseTerm();
+			else if (entry == jdesc::Expression)
 			{
-				// TODO
+				WriteTokenNext();
+				ParseExpression();
+			}
+			else
+			{
+				WriteTokenNext();
+				break;
+			}
+		}*/
+	}
+
+	void jalr::ParseTerm()
+	{
+		IncTree("<term>");
+		bool breaker{ false };
+		bool isNested{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::Term) };
+			WriteTokenNext();
+			switch (entry)
+			{
+				case(jdesc::Expression): { ParseExpression(); break; }
+				case(jdesc::Term): { ParseTerm(); break; }
+				case(jdesc::BREAKER): 
+				{
+					breaker = true;
+					WriteTokenNext();
+					break;
+				}
+				default:
+				{
+					const token& next{ mFile.Get().content };
+					if (next == "[")
+					{
+						isNested = true;
+						WriteTokenNext(); // Write opening brace/bracket
+						ParseExpression();
+					}
+					else if (next == "(" || next == ".")
+					{
+						ParseSubroutineCall();
+						breaker = true;
+					}
+					else
+						breaker = true;
+					break;
+				}
 			}
 		}
-		DecTree("</expression>");
+		DecTree("</term>");
+	}
+
+	void jalr::ParseSubroutineCall()
+	{
+		// This is only called once it's confirmed to be a subroutine call.
+		// Check if id is followed by parenthesis or a .
+		// eg joe.""; or mama();
+
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::SubroutineCall) };
+			switch (entry)
+			{
+				case(jdesc::ExpressionList): { ParseExpressionList(); breaker = true; break; }
+				case(jdesc::BREAKER): { breaker = true; break; }
+				default: { WriteTokenNext(); break; }
+			}
+		}
 	}
 
 	// dep, use GetEntrypoint()
@@ -396,6 +528,7 @@ namespace jcom
 	void jalr::WriteToken()
 	{
 		jpair& pair{ mFile.Get() };
+		std::cout << pair.content << '\n';
 		const Tag& tag{ gTokenFlags.at(pair.type) };
 		WriteLine(tag.opener + pair.content + tag.closer);
 	}

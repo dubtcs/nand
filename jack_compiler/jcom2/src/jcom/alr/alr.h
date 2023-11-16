@@ -39,14 +39,17 @@ namespace jcom
 		void ParseParameterList();
 		void ParseSubroutineBody();
 		void ParseSubroutineVar();
+		void ParseSubroutineCall(); // soft rule, no headers
 
 		void ParseStatements();
 		void ParseLetStatement();
 		void ParseDoStatement();
 		void ParseReturnStatement();
+		void ParseIfStatement();
 
 		void ParseExpressionList();
 		void ParseExpression();
+		void ParseTerm();
 
 		bool ContextContains(entrymap& entries, jdesc context);
 		jdesc GetEntrypoint(jdesc context);

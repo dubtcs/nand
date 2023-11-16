@@ -33,5 +33,6 @@ namespace jcom
 	extern std::unordered_map<token, JackToken> gKeywords;
 
 	extern std::unordered_set<token> gComplexKeywords;
+	extern std::unordered_set<token> gKeywordConstants;
 
 }

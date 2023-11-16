@@ -64,4 +64,9 @@ namespace jcom
 		{"~", JackToken::Symbol},
 	};
 
+	std::unordered_set<token> gKeywordConstants
+	{
+		"true", "false", "null", "this"
+	};
+
 }
