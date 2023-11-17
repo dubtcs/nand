@@ -11,7 +11,7 @@ namespace jcom
 
 	struct jpair
 	{
-		token content;
+		token content{""};
 		jtok type{ JackToken::None };
 	};
 

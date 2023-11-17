@@ -46,6 +46,7 @@ namespace jcom
 		void ParseDoStatement();
 		void ParseReturnStatement();
 		void ParseIfStatement();
+		void ParseWhileStatement();
 
 		void ParseExpressionList();
 		void ParseExpression();

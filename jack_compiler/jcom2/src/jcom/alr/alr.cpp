@@ -73,7 +73,8 @@ namespace jcom
 		},
 		{ jdesc::LetStatement,
 			{
-				{";", jdesc::BREAKER},
+				{"=", jdesc::Expression},
+				{";", jdesc::BREAKER}
 			}
 		},
 		{ jdesc::DoStatement,
@@ -92,6 +93,8 @@ namespace jcom
 		},
 		{ jdesc::WhileStatement,
 			{
+				{"{", jdesc::Statement},
+				{"(", jdesc::Expression},
 				{"}", jdesc::BREAKER},
 			}
 		},
@@ -291,6 +294,7 @@ namespace jcom
 				case(jdesc::DoStatement): { ParseDoStatement(); break; }
 				case(jdesc::ReturnStatement): { ParseReturnStatement(); break; }
 				case(jdesc::IfStatement): {ParseIfStatement(); break; }
+				case(jdesc::WhileStatement): {ParseWhileStatement(); break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
 				default: { mFile.Next(); break; }
 			}
@@ -308,6 +312,8 @@ namespace jcom
 			WriteTokenNext();
 			if (entry == jdesc::BREAKER)
 				break;
+			else if (entry == jdesc::Expression)
+				ParseExpression();
 		}
 
 		DecTree("</letStatement>");
@@ -335,13 +341,10 @@ namespace jcom
 	{
 		IncTree("<returnStatement>");
 
-		while (mFile.Available())
-		{
-			jdesc entry{ GetEntrypoint(jdesc::ReturnStatement) };
-			WriteTokenNext();
-			if (entry == jdesc::BREAKER)
-				break;
-		}
+		WriteTokenNext(); // return 
+		if (mFile.Get().content != ";") // optional expression
+			ParseExpression();
+		WriteTokenNext(); // ;
 
 		DecTree("</returnStatement>");
 	}
@@ -378,6 +381,26 @@ namespace jcom
 			}
 		}
 		DecTree("</ifStatement>");
+	}
+
+	void jalr::ParseWhileStatement()
+	{
+		// copied from if statement with minor changes
+		IncTree("<whileStatement>");
+		bool breaker{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::IfStatement) };
+			WriteTokenNext();
+
+			switch (entry)
+			{
+				case(jdesc::Expression): { ParseExpression(); break; }
+				case(jdesc::Statement): { ParseStatements(); break; }
+				case(jdesc::BREAKER): { breaker = true; break; }
+			}
+		}
+		DecTree("</whileStatement>");
 	}
 
 	void jalr::ParseExpressionList()
@@ -528,7 +551,7 @@ namespace jcom
 	void jalr::WriteToken()
 	{
 		jpair& pair{ mFile.Get() };
-		std::cout << pair.content << '\n';
+		//std::cout << pair.content << '\n';
 		const Tag& tag{ gTokenFlags.at(pair.type) };
 		WriteLine(tag.opener + pair.content + tag.closer);
 	}
