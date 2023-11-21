@@ -1,29 +1,37 @@
 #pragma once
 
-#include "tokens.h"
-#include "jline.h"
+#include <jcom/jcom.h>
 
-#include <jackc.h>
+#include "../tkn/tokens.h"
+
 #include <fstream>
 
 namespace jcom
 {
+
+	struct jpair
+	{
+		token content{""};
+		jtok type{ JackToken::None };
+	};
+
 	// Wrapper for .jack files to search for each available token
 	class jfile
 	{
 	public:
 		jfile(std::ifstream& inFile);
 	public:
-		// Get the next available token in the file.
-		// @param pair - Struct to insert data into
-		// @return if another token is available
-		bool NextToken(jpair& pair);
-		jpair GetCurrent();
+		bool Available();
+		bool Next();
+		const jpair& PeekNext();
+		jpair& Get();
 	protected:
+		void FillPair(jpair& pair);
 		bool CheckContent();
 	protected:
 		size_t mCursor{ 0 };
 		jpair mCurrent{};
+		jpair mNext{};
 		std::ifstream& mFile;
 		std::string mContent{};
 	};

@@ -18,7 +18,7 @@ namespace jcom
 		"class", "constructor", "function", "method", "field", "static", "var", "let", "do", "if", "while", "return"
 	};
 
-	std::unordered_map<token, jtok> gReservedTokens{
+	std::unordered_map<token, jtok> gKeywords{
 		// Keywords
 		{"class",		JackToken::Keyword},
 		{"constructor", JackToken::Keyword},
@@ -62,6 +62,11 @@ namespace jcom
 		{">", JackToken::Symbol},
 		{"=", JackToken::Symbol},
 		{"~", JackToken::Symbol},
+	};
+
+	std::unordered_set<token> gKeywordConstants
+	{
+		"true", "false", "null", "this"
 	};
 
 }

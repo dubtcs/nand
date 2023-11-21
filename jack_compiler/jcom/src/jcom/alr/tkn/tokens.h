@@ -1,6 +1,6 @@
 #pragma once
 
-#include <jackc.h>
+#include <jcom/jcom.h>
 #include <string>
 #include <memory>
 #include <unordered_map>
@@ -30,8 +30,9 @@ namespace jcom
 	using jtok = JackToken;
 
 	extern std::unordered_map<JackToken, Tag> gTokenFlags; // termonal elements
-	extern std::unordered_map<token, JackToken> gReservedTokens;
+	extern std::unordered_map<token, JackToken> gKeywords;
 
 	extern std::unordered_set<token> gComplexKeywords;
+	extern std::unordered_set<token> gKeywordConstants;
 
 }

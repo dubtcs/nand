@@ -1,6 +1,6 @@
 #pragma once
 
-#include "jackc.h"
+#include <jcom/jcom.h>
 
 namespace jcom
 {
