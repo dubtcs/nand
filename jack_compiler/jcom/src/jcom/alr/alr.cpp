@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <jcom/cmp/st/smta.h>
+
 namespace jcom
 {
 
@@ -147,9 +149,7 @@ namespace jcom
 		mOutFile{ outFile },
 		mFile{ inFile }
 	{
-		IncTree("<tokens>");
 		ParseToken();
-		DecTree("</tokens>");
 	}
 
 	void jalr::ParseToken()
@@ -157,12 +157,6 @@ namespace jcom
 		while (mFile.Available())
 		{
 			const token& tk{ mFile.Get().content };
-			/*if (mBruh.contains(tk))
-			{
-				WriteLine("Shit");
-				auto j = mFnPtrs.at(tk);
-				std::invoke(j, this);
-			}*/
 			if (tk == "class")
 			{
 				ParseClass();
@@ -173,7 +167,6 @@ namespace jcom
 
 	void jalr::ParseClass()
 	{
-		IncTree("<class>");
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::Class) };
@@ -184,26 +177,32 @@ namespace jcom
 				default: { WriteTokenNext(); break; }
 			}
 		}
-		DecTree("</class>");
 	}
 
 	void jalr::ParseClassVar()
 	{
-		IncTree("<classVarDec>");
 		bool breaker{ false };
+
+		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dnagerous, no index checking
+		mFile.Next();
+		std::string varKind{ mFile.Get().content };
+		mFile.Next();
+
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::ClassVarDec) };
 			breaker = (entry == jdesc::BREAKER);
-			WriteToken();
+			const token& tk{ mFile.Get().content };
+			if ((!breaker) && (tk != ","))
+			{
+				mClassTable.Define(mFile.Get().content, varKind, varPool);
+			}
 			mFile.Next();
 		}
-		DecTree("</classVarDec>");
 	}
 
 	void jalr::ParseSubroutine()
 	{
-		IncTree("<subroutineDec>");
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
 		{
@@ -220,12 +219,10 @@ namespace jcom
 			}
 		}
 		mFile.Next();
-		DecTree("</subroutineDec>");
 	}
 
 	void jalr::ParseSubroutineVar()
 	{
-		IncTree("<varDec>");
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
 		{
@@ -234,13 +231,11 @@ namespace jcom
 			WriteToken();
 			mFile.Next();
 		}
-		DecTree("</varDec>");
 	}
 
 	void jalr::ParseParameterList()
 	{
 		WriteToken();
-		IncTree("<parameterList>");
 		mFile.Next();
 
 		while (mFile.Available())
@@ -253,7 +248,6 @@ namespace jcom
 			WriteToken();
 			mFile.Next();
 		}
-		DecTree("</parameterList>");
 
 		WriteToken();
 		mFile.Next();
@@ -261,7 +255,6 @@ namespace jcom
 
 	void jalr::ParseSubroutineBody()
 	{
-		IncTree("<subroutineBody>");
 		WriteTokenNext();
 
 		bool breaker{ false };
@@ -278,12 +271,10 @@ namespace jcom
 		}
 
 		WriteToken();
-		DecTree("</subroutineBody>");
 	}
 
 	void jalr::ParseStatements()
 	{
-		IncTree("<statements>");
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
 		{
@@ -299,12 +290,10 @@ namespace jcom
 				default: { mFile.Next(); break; }
 			}
 		}
-		DecTree("</statements>");
 	}
 
 	void jalr::ParseLetStatement()
 	{
-		IncTree("<letStatement>");
 
 		while (mFile.Available())
 		{
@@ -316,12 +305,10 @@ namespace jcom
 				ParseExpression();
 		}
 
-		DecTree("</letStatement>");
 	}
 
 	void jalr::ParseDoStatement()
 	{
-		IncTree("<doStatement>");
 
 		while (mFile.Available())
 		{
@@ -334,24 +321,20 @@ namespace jcom
 				break;
 		}
 
-		DecTree("</doStatement>");
 	}
 
 	void jalr::ParseReturnStatement()
 	{
-		IncTree("<returnStatement>");
 
 		WriteTokenNext(); // return 
 		if (mFile.Get().content != ";") // optional expression
 			ParseExpression();
 		WriteTokenNext(); // ;
 
-		DecTree("</returnStatement>");
 	}
 
 	void jalr::ParseIfStatement()
 	{
-		IncTree("<ifStatement>");
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
 		{
@@ -380,13 +363,11 @@ namespace jcom
 				//default: //WriteTokenNext();
 			}
 		}
-		DecTree("</ifStatement>");
 	}
 
 	void jalr::ParseWhileStatement()
 	{
 		// copied from if statement with minor changes
-		IncTree("<whileStatement>");
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
 		{
@@ -400,13 +381,11 @@ namespace jcom
 				case(jdesc::BREAKER): { breaker = true; break; }
 			}
 		}
-		DecTree("</whileStatement>");
 	}
 
 	void jalr::ParseExpressionList()
 	{
 		WriteTokenNext();
-		IncTree("<expressionList>");
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::ExpressionList) };
@@ -416,41 +395,19 @@ namespace jcom
 				ParseExpression();
 			WriteTokenNext();
 		}
-		DecTree("</expressionList>");
 		WriteTokenNext();
 	}
 
 	void jalr::ParseExpression()
 	{
-		IncTree("<expression>");
 		bool theseFound{ false };
 		jdesc entry{ GetEntrypoint(jdesc::Expression) };
 		if (entry != jdesc::BREAKER)
 			ParseTerm();
-		DecTree("</expression>");
-
-
-		/*while (mFile.Available())
-		{
-			jdesc entry{ GetEntrypoint(jdesc::Expression) };
-			if (entry != jdesc::Expression)
-				ParseTerm();
-			else if (entry == jdesc::Expression)
-			{
-				WriteTokenNext();
-				ParseExpression();
-			}
-			else
-			{
-				WriteTokenNext();
-				break;
-			}
-		}*/
 	}
 
 	void jalr::ParseTerm()
 	{
-		IncTree("<term>");
 		bool breaker{ false };
 		bool isNested{ false };
 		while (mFile.Available() && !breaker)
@@ -487,7 +444,6 @@ namespace jcom
 				}
 			}
 		}
-		DecTree("</term>");
 	}
 
 	void jalr::ParseSubroutineCall()
@@ -531,21 +487,14 @@ namespace jcom
 		return rdesc;
 	}
 
-	void jalr::IncTree(const std::string& label)
-	{
-		WriteLine(label);
-		mTreeString += '\t';
-	}
-
-	void jalr::DecTree(const std::string& label)
-	{
-		mTreeString.pop_back();
-		WriteLine(label);
-	}
-
 	void jalr::WriteLine(const std::string& content)
 	{
-		mOutFile << mTreeString + content << '\n';
+		mOutFile << content << '\n';
+	}
+
+	void jalr::WriteCommand(const std::string& cmd)
+	{
+		WriteLine(cmd);
 	}
 
 	void jalr::WriteToken()

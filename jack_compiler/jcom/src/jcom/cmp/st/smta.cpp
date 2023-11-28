@@ -4,6 +4,13 @@
 namespace jcom
 {
 
+	std::unordered_map<token, jpool> gTokenToPool
+	{
+		{"field",	jpool::FIELD},
+		{"static",	jpool::STATIC},
+		{"arg",		jpool::ARG},
+	};
+
 	symtable::symtable()
 	{
 

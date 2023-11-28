@@ -8,7 +8,7 @@ namespace jcom
 		if (path.extension() == JACK_EXTENSION)
 		{
 			std::ifstream inFile{ path.string() };
-			std::string newName{ '\\' + path.filename().replace_extension("xml").string() };
+			std::string newName{ '\\' + path.filename().replace_extension("txt").string() };
 			std::ofstream outFile{ path.parent_path().string() + newName };
 
 			jalr anl{ inFile, outFile };

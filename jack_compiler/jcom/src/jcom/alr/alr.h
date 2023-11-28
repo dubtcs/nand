@@ -4,6 +4,7 @@
 
 #include "cntx/contexts.h"
 #include "file/jfile.h"
+#include <jcom/cmp/st/smta.h>
 
 #include <string>
 #include <stack>
@@ -30,9 +31,6 @@ namespace jcom
 	protected:
 		void ParseToken();
 
-		void IncTree(const std::string& label);
-		void DecTree(const std::string& label);
-
 		void ParseClass();
 		void ParseClassVar();
 		void ParseSubroutine();
@@ -55,6 +53,7 @@ namespace jcom
 		bool ContextContains(entrymap& entries, jdesc context);
 		jdesc GetEntrypoint(jdesc context);
 
+		void WriteCommand(const std::string& cmd);
 		void WriteToken();
 		void WriteTokenNext();
 		void WriteLine(const std::string& str);
@@ -62,9 +61,9 @@ namespace jcom
 		std::ifstream& mInFile;
 		std::ofstream& mOutFile;
 		jfile mFile;
-		std::string mTreeString{};
 		static const cmap mContexts;
-		//static const emap2 mFnPtrs;
+		symtable mClassTable{};
+		symtable mRoutineTable{};
 	};
 
 }

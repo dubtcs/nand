@@ -13,6 +13,7 @@ namespace jcom
 	{
 		NONE, CONST, STATIC, FIELD, VAR, ARG, THIS, THAT, POINTER, TEMP
 	};
+	extern std::unordered_map<token, jpool> gTokenToPool;
 
 	struct syminfo
 	{
