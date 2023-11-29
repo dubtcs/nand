@@ -9,6 +9,16 @@ namespace jcom
 		{"field",	jpool::FIELD},
 		{"static",	jpool::STATIC},
 		{"arg",		jpool::ARG},
+		{"var",		jpool::LOCAL}
+	};
+
+	std::unordered_map<jpool, token> gPoolToToken
+	{
+		{jpool::CONST,	"constant"},
+		{jpool::STATIC, "static"},
+		{jpool::TEMP,	"temp"},
+		{jpool::ARG,	"arguments"},
+		{jpool::LOCAL,	"local"}
 	};
 
 	symtable::symtable()
@@ -18,9 +28,9 @@ namespace jcom
 
 	void symtable::Define(const token& str, const token& classType, jpool pool)
 	{
-		int32_t index{ 0 };
-		if (mPoolCount.contains(pool))
-			index = mPoolCount.at(pool)++;
+		if (!mPoolCount.contains(pool))
+			mPoolCount.emplace(pool, 0);
+		int32_t index{ mPoolCount.at(pool)++ };
 		mInfo.insert({ str, { classType, pool, index } });
 	}
 

@@ -24,6 +24,7 @@ namespace jcom
 		bool Available();
 		bool Next();
 		const jpair& PeekNext();
+		const jpair& Advance(); // returns current and advances cursor
 		jpair& Get();
 	protected:
 		void FillPair(jpair& pair);

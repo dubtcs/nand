@@ -1,0 +1,44 @@
+<identifier>Main</identifier>
+<symbol>{</symbol>
+<keyword>function</keyword>
+<keyword>void</keyword>
+<identifier>main</identifier>
+<symbol>(</symbol>
+<symbol>{</symbol>
+push local 0
+pop local 0
+<keyword>do</keyword>
+<identifier>game</identifier>
+<symbol>.</symbol>
+<identifier>run</identifier>
+<symbol>(</symbol>
+<symbol>)</symbol>
+<symbol>;</symbol>
+<keyword>do</keyword>
+<identifier>game</identifier>
+<symbol>.</symbol>
+<identifier>dispose</identifier>
+<symbol>(</symbol>
+<symbol>)</symbol>
+<symbol>;</symbol>
+<keyword>return</keyword>
+<symbol>;</symbol>
+<symbol>}</symbol>
+<keyword>function</keyword>
+<keyword>void</keyword>
+<identifier>more</identifier>
+<symbol>(</symbol>
+<symbol>{</symbol>
+<keyword>if</keyword>
+<symbol>(</symbol>
+push local 0
+<symbol>)</symbol>
+<symbol>{</symbol>
+<symbol>}</symbol>
+<keyword>else</keyword>
+<symbol>{</symbol>
+<symbol>}</symbol>
+<keyword>return</keyword>
+<symbol>;</symbol>
+<symbol>}</symbol>
+<symbol>}</symbol>

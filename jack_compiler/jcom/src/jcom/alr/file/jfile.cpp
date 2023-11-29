@@ -105,6 +105,7 @@ namespace jcom
 			pair.type = JackToken::Id; // nothing else but Identifier
 	}
 
+	// Advance cursor
 	bool jfile::Next()
 	{
 		mCurrent = mNext;
@@ -117,6 +118,7 @@ namespace jcom
 		return mNext;
 	}
 
+	// Check if more content is available in file
 	bool jfile::CheckContent()
 	{
 		if (mCursor >= mContent.size())
@@ -130,9 +132,18 @@ namespace jcom
 		return true;
 	}
 
+	// Return current token
 	jpair& jfile::Get()
 	{
 		return mCurrent;
+	}
+
+	// Return current token and advance cursor
+	const jpair& jfile::Advance()
+	{
+		jpair r{ mCurrent };
+		Next();
+		return r;
 	}
 
 	bool jfile::Available()

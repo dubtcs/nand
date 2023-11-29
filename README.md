@@ -1,13 +1,14 @@
 
 # NAND
-My progress repository for [nand2tetris](https://www.nand2tetris.org/)
+
+The HACK 16 bit computer. This repository contains all content to build the computer from elementary NAND chips to a compiler and operating system. The work follows the syllabus of [nand2teris.](https://www.nand2tetris.org/)
 
 ## Content
 
-The HACK computer can be found in [aio](aio)
-
-Individual project files can be found in [projects](projects)
+The HACK computer and chips can be found in [aio](aio)
 
 The HACK language assembler can be found in [assembler](assembler)
 
-The JACK language translator can be found in [translator](translator)
+The JACK language VM translator can be found in [translator](translator)
+
+The JACK language compiler can be found in [jack_compiler](jack_compiler)

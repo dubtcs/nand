@@ -5,15 +5,19 @@
 #include <unordered_map>
 #include <memory>
 
+static inline constexpr int32_t TABLE_CLASS{ 0 };
+static inline constexpr int32_t TABLE_SUB{ 1 };
+
 namespace jcom
 {
 
 	// Virtual memory segments
 	enum class jpool
 	{
-		NONE, CONST, STATIC, FIELD, VAR, ARG, THIS, THAT, POINTER, TEMP
+		NONE, CONST, STATIC, FIELD, VAR, ARG, THIS, THAT, POINTER, TEMP, LOCAL
 	};
 	extern std::unordered_map<token, jpool> gTokenToPool;
+	extern std::unordered_map<jpool, token> gPoolToToken;
 
 	struct syminfo
 	{

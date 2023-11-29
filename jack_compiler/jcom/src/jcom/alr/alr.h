@@ -8,6 +8,7 @@
 
 #include <string>
 #include <stack>
+#include <array>
 
 namespace jcom
 {
@@ -20,9 +21,6 @@ namespace jcom
 	using emap = std::unordered_map<token, jdesc>;
 	// Context map
 	using cmap = std::unordered_map<jdesc, emap>;
-
-	// could use function pointers
-	//using emap2 = std::unordered_map<token, void(jalr::*)()>;
 
 	class jalr
 	{
@@ -53,6 +51,10 @@ namespace jcom
 		bool ContextContains(entrymap& entries, jdesc context);
 		jdesc GetEntrypoint(jdesc context);
 
+		void Push(const token& varName);
+		void PushConstant(const token& varName);
+		void Pop(const token& var);
+
 		void WriteCommand(const std::string& cmd);
 		void WriteToken();
 		void WriteTokenNext();
@@ -62,8 +64,9 @@ namespace jcom
 		std::ofstream& mOutFile;
 		jfile mFile;
 		static const cmap mContexts;
-		symtable mClassTable{};
-		symtable mRoutineTable{};
+		token mClassContext{};
+		int32_t mCurrentTable{ 0 };
+		std::array<symtable, 2> mTables{};
 	};
 
 }

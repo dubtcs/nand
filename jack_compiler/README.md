@@ -5,9 +5,13 @@ A compiler for the JACK language.
 
 ## How To Use
 
-Translator is a simple console application. Call `start jcom <filename/directory>` from inside the translator directory, and it will compile a jack program.
+Compiler is a simple console application. Call `start jcom <filename/directory>` from inside the translator directory, and it will compile a jack program.
 
-The compiler can compile both individual files and entire directories. One *.xml file will be output for each *.jack file present.
+The compiler can compile both individual files and entire directories.
+
+Two versions of the compiler are present:
+ - `jcom-xml` outputs a formatted *.xml file of the supplied code.
+ - `jcom` outputs a *.vm file of the supplied code that works with the JACK virtual machine. (WIP)
 
 ## Download + Build
 

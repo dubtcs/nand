@@ -5,6 +5,8 @@
 
 #include <jcom/cmp/st/smta.h>
 
+#include <algorithm>
+
 namespace jcom
 {
 
@@ -144,6 +146,11 @@ namespace jcom
 		},
 	};
 
+	static bool IsNumber(const token& str)
+	{
+		return std::all_of(str.begin(), str.end(), std::isdigit);
+	}
+
 	jalr::jalr(std::ifstream& inFile, std::ofstream& outFile) :
 		mInFile{ inFile },
 		mOutFile{ outFile },
@@ -167,6 +174,9 @@ namespace jcom
 
 	void jalr::ParseClass()
 	{
+		mFile.Next();
+		mClassContext = mFile.Get().content;
+
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::Class) };
@@ -195,7 +205,8 @@ namespace jcom
 			const token& tk{ mFile.Get().content };
 			if ((!breaker) && (tk != ","))
 			{
-				mClassTable.Define(mFile.Get().content, varKind, varPool);
+				mTables.at(mCurrentTable).Define(tk, varKind, varPool);
+				const syminfo& info{ mTables.at(mCurrentTable).GetInfo(tk) };
 			}
 			mFile.Next();
 		}
@@ -204,6 +215,15 @@ namespace jcom
 	void jalr::ParseSubroutine()
 	{
 		bool breaker{ false };
+		mCurrentTable = TABLE_SUB;
+
+
+		// Reset current table
+		symtable& table{ mTables.at(mCurrentTable) };
+		table = symtable{};
+
+		table.Define("this", mClassContext, jpool::ARG);
+
 		while (mFile.Available() && !breaker)
 		{
 			const token& tk{ mFile.Get().content };
@@ -218,17 +238,34 @@ namespace jcom
 				default:					{ WriteTokenNext(); break; } // should never get this if syntax is correct
 			}
 		}
+
+		mCurrentTable = TABLE_CLASS;
 		mFile.Next();
 	}
 
+	// this and class var can be condensed now that xml is meaningless
 	void jalr::ParseSubroutineVar()
 	{
 		bool breaker{ false };
+
+		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dnagerous, no index checking
+		mFile.Next();
+		std::string varKind{ mFile.Get().content };
+		mFile.Next();
+
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::VarDec) };
 			breaker = (entry == jdesc::BREAKER);
-			WriteToken();
+
+			const token& tk{ mFile.Get().content };
+			if ((!breaker) && (tk != ","))
+			{
+				mTables.at(mCurrentTable).Define(tk, varKind, varPool);
+				std::cout << tk << '\n';
+				const syminfo& info{ mTables.at(mCurrentTable).GetInfo(tk) };
+			}
+
 			mFile.Next();
 		}
 	}
@@ -238,6 +275,7 @@ namespace jcom
 		WriteToken();
 		mFile.Next();
 
+		token kind{};
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::ParameterList) };
@@ -245,11 +283,22 @@ namespace jcom
 			if (entry == jdesc::BREAKER)
 				break;
 
-			WriteToken();
+			symtable& table{ mTables.at(mCurrentTable) };
+			const token& tk{ mFile.Get().content };
+			if (tk != ",")
+			{
+				if (kind.empty())
+					kind = tk;
+				else
+				{
+					table.Define(tk, kind, jpool::ARG);
+					kind = "";
+				}
+			}
+
 			mFile.Next();
 		}
 
-		WriteToken();
 		mFile.Next();
 	}
 
@@ -295,15 +344,23 @@ namespace jcom
 	void jalr::ParseLetStatement()
 	{
 
+		// ignore LET
+		mFile.Next();
+
+		token name{ mFile.Get().content };
+
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::LetStatement) };
-			WriteTokenNext();
+			//WriteTokenNext();
+			mFile.Next();
 			if (entry == jdesc::BREAKER)
 				break;
 			else if (entry == jdesc::Expression)
 				ParseExpression();
 		}
+
+		Pop(name);
 
 	}
 
@@ -413,7 +470,9 @@ namespace jcom
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::Term) };
-			WriteTokenNext();
+			const token tk{ mFile.Get().content };
+			mFile.Next();
+			std::cout << tk << '\n';
 			switch (entry)
 			{
 				case(jdesc::Expression): { ParseExpression(); break; }
@@ -426,8 +485,22 @@ namespace jcom
 				}
 				default:
 				{
+					if (IsNumber(tk))
+					{
+						PushConstant(tk);
+					}
+					else
+					{
+						if (mTables.at(mCurrentTable).Contains(tk))
+							Push(tk);
+						else if (mTables.at(mCurrentTable - 1).Contains(tk)) // this (-1) is dangerous ug og
+							Push(tk);
+						//else
+							// complex expression
+					}
+
 					const token& next{ mFile.Get().content };
-					if (next == "[")
+					if (next == "[") // handle arrays
 					{
 						isNested = true;
 						WriteTokenNext(); // Write opening brace/bracket
@@ -487,6 +560,23 @@ namespace jcom
 		return rdesc;
 	}
 
+	void jalr::Push(const token& name)
+	{
+		const syminfo& info{ mTables.at(mCurrentTable).GetInfo(name) };
+		WriteLine("push " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
+	}
+
+	void jalr::PushConstant(const token& num)
+	{
+		WriteLine("push " + gPoolToToken.at(jpool::CONST) + " " + num);
+	}
+
+	void jalr::Pop(const token& name)
+	{
+		const syminfo& info{ mTables.at(mCurrentTable).GetInfo(name) };
+		WriteLine("pop " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
+	}
+
 	void jalr::WriteLine(const std::string& content)
 	{
 		mOutFile << content << '\n';
@@ -500,7 +590,6 @@ namespace jcom
 	void jalr::WriteToken()
 	{
 		jpair& pair{ mFile.Get() };
-		//std::cout << pair.content << '\n';
 		const Tag& tag{ gTokenFlags.at(pair.type) };
 		WriteLine(tag.opener + pair.content + tag.closer);
 	}

@@ -1,8 +1,8 @@
 
 class Main {
-    static boolean test;
+    static boolean test, shaboingboing, bruh, aleight;
 
-    function void main() {
+    function void main(int i, int b, bruh j) {
         var SquareGame game;
         let game = game;
         do game.run();
