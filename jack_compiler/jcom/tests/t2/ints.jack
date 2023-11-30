@@ -4,7 +4,7 @@ class Main {
 
     function void main(int i, int b, bruh j) {
         var SquareGame game;
-        let game = game;
+        let game = -game;
         do game.run();
         do game.dispose();
         return;
@@ -12,7 +12,7 @@ class Main {
 
     function void more() {  // Added to test Jack syntax that is not used in
         var boolean b;      // the Square files.
-        if (b) {
+        if (-b) {
         }
         else {              // There is no else keyword in the Square files.
         }

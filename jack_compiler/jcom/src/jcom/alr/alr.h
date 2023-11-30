@@ -8,6 +8,7 @@
 
 #include <string>
 #include <stack>
+#include <queue>
 #include <array>
 
 namespace jcom
@@ -51,7 +52,8 @@ namespace jcom
 		bool ContextContains(entrymap& entries, jdesc context);
 		jdesc GetEntrypoint(jdesc context);
 
-		void Push(const token& varName);
+		void PushTry(const token& varName);
+		void Push(const token& varName, int32_t tableIndex);
 		void PushConstant(const token& varName);
 		void Pop(const token& var);
 
@@ -63,10 +65,10 @@ namespace jcom
 		std::ifstream& mInFile;
 		std::ofstream& mOutFile;
 		jfile mFile;
-		static const cmap mContexts;
 		token mClassContext{};
 		int32_t mCurrentTable{ 0 };
 		std::array<symtable, 2> mTables{};
+		static const cmap mContexts;
 	};
 
 }

@@ -14,6 +14,15 @@ namespace jcom
 	//	{"class", &jalr::ParseClass}
 	//};
 
+	static const std::unordered_map<token, token> gOperatorSymbols
+	{
+		{ "-", "neg" },
+		{ "+", "add" },
+		{ "-", "sub" },
+		{ "*", "Math.multiply()" }, // OS Call
+		{ "/", "Math.divide()" },	// OS Call
+	};
+
 	const cmap jalr::mContexts
 	{
 		{ jdesc::Class, 
@@ -457,6 +466,8 @@ namespace jcom
 
 	void jalr::ParseExpression()
 	{
+		std::stack<token> operatorStack{};
+
 		bool theseFound{ false };
 		jdesc entry{ GetEntrypoint(jdesc::Expression) };
 		if (entry != jdesc::BREAKER)
@@ -465,56 +476,63 @@ namespace jcom
 
 	void jalr::ParseTerm()
 	{
-		bool breaker{ false };
-		bool isNested{ false };
-		while (mFile.Available() && !breaker)
-		{
-			jdesc entry{ GetEntrypoint(jdesc::Term) };
-			const token tk{ mFile.Get().content };
-			mFile.Next();
-			std::cout << tk << '\n';
-			switch (entry)
-			{
-				case(jdesc::Expression): { ParseExpression(); break; }
-				case(jdesc::Term): { ParseTerm(); break; }
-				case(jdesc::BREAKER): 
-				{
-					breaker = true;
-					WriteTokenNext();
-					break;
-				}
-				default:
-				{
-					if (IsNumber(tk))
-					{
-						PushConstant(tk);
-					}
-					else
-					{
-						if (mTables.at(mCurrentTable).Contains(tk))
-							Push(tk);
-						else if (mTables.at(mCurrentTable - 1).Contains(tk)) // this (-1) is dangerous ug og
-							Push(tk);
-						//else
-							// complex expression
-					}
+		token tk{ mFile.Get().content };
+		jtok type{ mFile.Get().type };
 
-					const token& next{ mFile.Get().content };
-					if (next == "[") // handle arrays
-					{
-						isNested = true;
-						WriteTokenNext(); // Write opening brace/bracket
-						ParseExpression();
-					}
-					else if (next == "(" || next == ".")
-					{
-						ParseSubroutineCall();
-						breaker = true;
-					}
-					else
-						breaker = true;
-					break;
+		// Unary operator
+		switch (type)
+		{
+			case(jtok::Int):
+			{
+				if (IsNumber(tk))
+					PushConstant(tk);
+				else
+					std::cout << "Integer constant but not a number: " << tk << '\n';
+				break;
+			}
+			case(jtok::String):
+			{
+				for (const char& c : tk)
+					WriteLine("String.appendChar(" + tk + ")");
+				break;
+			}
+			case(jtok::Keyword):
+			{
+				// null == 0
+				// false == 0
+				// true == -1
+				PushConstant((tk == "true") ? "-1" : "0");
+				break;
+			}
+			case(jtok::Symbol):
+			{
+				// Check for unary operators
+				if (tk == "~") // not
+				{
+					mFile.Next();
+					ParseTerm();
+					WriteLine("not");
 				}
+				else if (tk == "-") // negate
+				{
+					mFile.Next();
+					ParseTerm();
+					WriteLine("neg");
+				}
+				break;
+			}
+			case(jtok::Id):
+			{
+				const token& next{ mFile.PeekNext().content };
+				if (next == "[" || next == ".")
+				{
+					// array or subroutine
+				}
+				else // just an ID
+				{
+					PushTry(tk);
+				}
+				break;
 			}
 		}
 	}
@@ -560,15 +578,25 @@ namespace jcom
 		return rdesc;
 	}
 
-	void jalr::Push(const token& name)
+	void jalr::Push(const token& name, int32_t index)
 	{
-		const syminfo& info{ mTables.at(mCurrentTable).GetInfo(name) };
+		const syminfo& info{ mTables.at(index).GetInfo(name) };
 		WriteLine("push " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
 	}
 
 	void jalr::PushConstant(const token& num)
 	{
 		WriteLine("push " + gPoolToToken.at(jpool::CONST) + " " + num);
+	}
+
+	void jalr::PushTry(const token& name)
+	{
+		if ((mCurrentTable > 0) && mTables.at(TABLE_SUB).Contains(name))
+			Push(name, TABLE_SUB);
+		else if (mTables.at(TABLE_CLASS).Contains(name))
+			Push(name, TABLE_CLASS);
+		else
+			std::cout << "No symbol found: " << name << '\n';
 	}
 
 	void jalr::Pop(const token& name)
@@ -601,3 +629,64 @@ namespace jcom
 	}
 
 }
+
+
+/*
+
+bool breaker{ false };
+		bool isNested{ false };
+		while (mFile.Available() && !breaker)
+		{
+			jdesc entry{ GetEntrypoint(jdesc::Term) };
+			const token tk{ mFile.Get().content };
+			mFile.Next();
+			switch (entry)
+			{
+				case(jdesc::Expression): { ParseExpression(); break; }
+				case(jdesc::Term): { ParseTerm(); break; }
+				case(jdesc::BREAKER):
+				{
+					breaker = true;
+					WriteTokenNext();
+					break;
+				}
+				default:
+				{
+					const token& next{ mFile.Get().content };
+					if (next == "[") // handle arrays
+					{
+						isNested = true;
+						WriteTokenNext(); // Write opening brace/bracket
+						ParseExpression();
+					}
+					else if (next == "(" || next == ".")
+					{
+						ParseSubroutineCall();
+						breaker = true;
+					}
+					else
+					{
+						// Not a subroutine call or array
+						if (IsNumber(tk))
+						{
+							PushConstant(tk);
+						}
+						else
+						{
+							// Can do this only because there is a limit of only 2 scopes in Jack
+							if ((mCurrentTable > 0) && mTables.at(TABLE_SUB).Contains(tk))
+								Push(tk, TABLE_SUB);
+							else if (mTables.at(TABLE_CLASS).Contains(tk))
+								Push(tk, TABLE_CLASS);
+							else if (gOperatorSymbols.contains(tk))
+								WriteLine(gOperatorSymbols.at(tk));
+
+							breaker = true;
+						}
+					}
+					break;
+				}
+			}
+		}
+
+*/
