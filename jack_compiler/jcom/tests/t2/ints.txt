@@ -6,7 +6,14 @@
 <symbol>(</symbol>
 <symbol>{</symbol>
 push local 0
-neg
+pop local 0
+push constant 1
+push constant 7
+push constant 7
+sub
+push constant 2
+sub
+add
 pop local 0
 <keyword>do</keyword>
 <identifier>game</identifier>
@@ -34,8 +41,6 @@ pop local 0
 <symbol>(</symbol>
 push local 0
 neg
-<identifier>b</identifier>
-<symbol>)</symbol>
 <symbol>{</symbol>
 <symbol>}</symbol>
 <keyword>else</keyword>

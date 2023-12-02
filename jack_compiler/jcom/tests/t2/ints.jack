@@ -4,7 +4,8 @@ class Main {
 
     function void main(int i, int b, bruh j) {
         var SquareGame game;
-        let game = -game;
+        let game = game;
+        let game = 1 + ((((((7-7))))) - 2);
         do game.run();
         do game.dispose();
         return;

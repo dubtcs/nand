@@ -16,9 +16,8 @@ namespace jcom
 
 	static const std::unordered_map<token, token> gOperatorSymbols
 	{
-		{ "-", "neg" },
-		{ "+", "add" },
 		{ "-", "sub" },
+		{ "+", "add" },
 		{ "*", "Math.multiply()" }, // OS Call
 		{ "/", "Math.divide()" },	// OS Call
 	};
@@ -198,6 +197,7 @@ namespace jcom
 		}
 	}
 
+	// this and class var can be condensed now that xml is meaningless
 	void jalr::ParseClassVar()
 	{
 		bool breaker{ false };
@@ -271,7 +271,6 @@ namespace jcom
 			if ((!breaker) && (tk != ","))
 			{
 				mTables.at(mCurrentTable).Define(tk, varKind, varPool);
-				std::cout << tk << '\n';
 				const syminfo& info{ mTables.at(mCurrentTable).GetInfo(tk) };
 			}
 
@@ -468,10 +467,27 @@ namespace jcom
 	{
 		std::stack<token> operatorStack{};
 
-		bool theseFound{ false };
 		jdesc entry{ GetEntrypoint(jdesc::Expression) };
+
 		if (entry != jdesc::BREAKER)
-			ParseTerm();
+		{
+			const token& tk{ mFile.Get().content };
+			ParseTerm(); // this advances file cursor
+			if (gOperatorSymbols.contains(tk))
+			{
+				operatorStack.push(tk);
+				mFile.Next();
+				ParseExpression();
+			}
+		}
+
+		// run operator commands
+		while (!operatorStack.empty())
+		{
+			const token& top{ operatorStack.top() };
+			WriteLine(gOperatorSymbols.at(top));
+			operatorStack.pop();
+		}
 	}
 
 	void jalr::ParseTerm()
@@ -493,7 +509,7 @@ namespace jcom
 			case(jtok::String):
 			{
 				for (const char& c : tk)
-					WriteLine("String.appendChar(" + tk + ")");
+					WriteLine("String.appendChar(" + std::string{ c } + ")");
 				break;
 			}
 			case(jtok::Keyword):
@@ -519,6 +535,11 @@ namespace jcom
 					ParseTerm();
 					WriteLine("neg");
 				}
+				else if (tk == "(")
+				{
+					mFile.Next();
+					ParseExpression();
+				}
 				break;
 			}
 			case(jtok::Id):
@@ -535,6 +556,8 @@ namespace jcom
 				break;
 			}
 		}
+
+		mFile.Next();
 	}
 
 	void jalr::ParseSubroutineCall()
