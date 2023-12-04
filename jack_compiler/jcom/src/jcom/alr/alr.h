@@ -36,7 +36,7 @@ namespace jcom
 		void ParseParameterList();
 		void ParseSubroutineBody();
 		void ParseSubroutineVar();
-		void ParseSubroutineCall(); // soft rule, no headers
+		void ParseSubroutineCall(token prefix = ""); // soft rule, no headers
 
 		void ParseStatements();
 		void ParseLetStatement();
@@ -56,6 +56,8 @@ namespace jcom
 		void Push(const token& varName, int32_t tableIndex);
 		void PushConstant(const token& varName);
 		void Pop(const token& var);
+
+		void Label(const token& label);
 
 		void WriteCommand(const std::string& cmd);
 		void WriteToken();

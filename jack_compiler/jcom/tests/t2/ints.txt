@@ -17,15 +17,11 @@ add
 pop local 0
 <keyword>do</keyword>
 <identifier>game</identifier>
-<symbol>.</symbol>
-<identifier>run</identifier>
 <symbol>(</symbol>
 <symbol>)</symbol>
 <symbol>;</symbol>
 <keyword>do</keyword>
 <identifier>game</identifier>
-<symbol>.</symbol>
-<identifier>dispose</identifier>
 <symbol>(</symbol>
 <symbol>)</symbol>
 <symbol>;</symbol>

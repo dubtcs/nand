@@ -18,8 +18,8 @@ namespace jcom
 	{
 		{ "-", "sub" },
 		{ "+", "add" },
-		{ "*", "Math.multiply()" }, // OS Call
-		{ "/", "Math.divide()" },	// OS Call
+		{ "*", "call Math.multiply" }, // OS Call
+		{ "/", "call Math.divide" },	// OS Call
 	};
 
 	const cmap jalr::mContexts
@@ -190,9 +190,9 @@ namespace jcom
 			jdesc entry{ GetEntrypoint(jdesc::Class) };
 			switch (entry)
 			{
-				case(jdesc::ClassVarDec): { ParseClassVar();		break; }
+				case(jdesc::ClassVarDec): { ParseClassVar();	break; }
 				case(jdesc::Subroutine): { ParseSubroutine();	break; }
-				default: { WriteTokenNext(); break; }
+				default: { mFile.Next(); break; }
 			}
 		}
 	}
@@ -226,6 +226,9 @@ namespace jcom
 		bool breaker{ false };
 		mCurrentTable = TABLE_SUB;
 
+		mFile.Next(); // skip function keyword
+		mFile.Next(); // skip return type
+		Label(mClassContext + "." + mFile.Get().content);
 
 		// Reset current table
 		symtable& table{ mTables.at(mCurrentTable) };
@@ -244,7 +247,7 @@ namespace jcom
 				case(jdesc::ParameterList): { ParseParameterList(); break; }
 				case(jdesc::SubroutineBody):{ ParseSubroutineBody(); break; }
 				case(jdesc::BREAKER):		{ breaker = true; break; }
-				default:					{ WriteTokenNext(); break; } // should never get this if syntax is correct
+				default:					{ mFile.Next(); break; } // should never get this if syntax is correct
 			}
 		}
 
@@ -258,9 +261,9 @@ namespace jcom
 		bool breaker{ false };
 
 		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dnagerous, no index checking
-		mFile.Next();
+		mFile.Next(); // skip keyword
 		std::string varKind{ mFile.Get().content };
-		mFile.Next();
+		mFile.Next(); // skip type
 
 		while (mFile.Available() && !breaker)
 		{
@@ -280,7 +283,7 @@ namespace jcom
 
 	void jalr::ParseParameterList()
 	{
-		WriteToken();
+		//WriteToken();
 		mFile.Next();
 
 		token kind{};
@@ -312,7 +315,7 @@ namespace jcom
 
 	void jalr::ParseSubroutineBody()
 	{
-		WriteTokenNext();
+		mFile.Next();
 
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
@@ -323,11 +326,10 @@ namespace jcom
 				case(jdesc::VarDec): { ParseSubroutineVar(); break; }
 				case(jdesc::Statement): { ParseStatements(); break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
-				default: { WriteTokenNext(); break; }
+				default: { mFile.Next(); break; }
 			}
 		}
 
-		WriteToken();
 	}
 
 	void jalr::ParseStatements()
@@ -360,7 +362,6 @@ namespace jcom
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::LetStatement) };
-			//WriteTokenNext();
 			mFile.Next();
 			if (entry == jdesc::BREAKER)
 				break;
@@ -375,13 +376,17 @@ namespace jcom
 	void jalr::ParseDoStatement()
 	{
 
+		token prev{ mFile.Get().content };
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::DoStatement) };
 			if (entry == jdesc::SubroutineCall)
-				ParseSubroutineCall();
+				ParseSubroutineCall((mFile.Get().content == ".") ? prev : mClassContext); // check if it's external or not, use current class context if none provided
 			else
-				WriteTokenNext();
+			{
+				prev = mFile.Get().content;
+				mFile.Next();
+			}
 			if (entry == jdesc::BREAKER)
 				break;
 		}
@@ -390,12 +395,12 @@ namespace jcom
 
 	void jalr::ParseReturnStatement()
 	{
-
-		WriteTokenNext(); // return 
+		mFile.Next(); // skip return keyword
 		if (mFile.Get().content != ";") // optional expression
 			ParseExpression();
-		WriteTokenNext(); // ;
-
+		else
+			PushConstant("0"); // always need to return a value, so we push 0 if no expression is found
+		WriteLine("return");
 	}
 
 	void jalr::ParseIfStatement()
@@ -450,7 +455,7 @@ namespace jcom
 
 	void jalr::ParseExpressionList()
 	{
-		WriteTokenNext();
+		mFile.Next(); // skip keyword
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::ExpressionList) };
@@ -458,9 +463,9 @@ namespace jcom
 				break;
 			else
 				ParseExpression();
-			WriteTokenNext();
+			mFile.Next(); // skip keyword
 		}
-		WriteTokenNext();
+		mFile.Next(); // skip keyword
 	}
 
 	void jalr::ParseExpression()
@@ -471,9 +476,9 @@ namespace jcom
 
 		if (entry != jdesc::BREAKER)
 		{
-			const token& tk{ mFile.Get().content };
 			ParseTerm(); // this advances file cursor
-			if (gOperatorSymbols.contains(tk))
+			const token& tk{ mFile.Get().content };
+			if (gOperatorSymbols.contains(tk)) // ignores PEMDAS for now
 			{
 				operatorStack.push(tk);
 				mFile.Next();
@@ -560,11 +565,17 @@ namespace jcom
 		mFile.Next();
 	}
 
-	void jalr::ParseSubroutineCall()
+	void jalr::ParseSubroutineCall(token label)
 	{
 		// This is only called once it's confirmed to be a subroutine call.
 		// Check if id is followed by parenthesis or a .
 		// eg joe.""; or mama();
+
+		if (mFile.Get().content == ".")
+		{
+			mFile.Next();
+			label += "." + mFile.Get().content;
+		}
 
 		bool breaker{ false };
 		while (mFile.Available() && !breaker)
@@ -574,9 +585,12 @@ namespace jcom
 			{
 				case(jdesc::ExpressionList): { ParseExpressionList(); breaker = true; break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
-				default: { WriteTokenNext(); break; }
+				default: { mFile.Next();  break; }
 			}
 		}
+
+		WriteLine("call " + label);
+		
 	}
 
 	// dep, use GetEntrypoint()
@@ -636,6 +650,11 @@ namespace jcom
 	void jalr::WriteCommand(const std::string& cmd)
 	{
 		WriteLine(cmd);
+	}
+
+	void jalr::Label(const token& label)
+	{
+		WriteLine("label " + label);
 	}
 
 	void jalr::WriteToken()

@@ -1,0 +1,13 @@
+label Main.main
+push constant 123
+push constant 6
+push constant 5
+call Math.multiply
+push constant 2
+sub
+add
+pop local 0
+push local 0
+push arguments 2
+push constant 345
+call bruh.test
