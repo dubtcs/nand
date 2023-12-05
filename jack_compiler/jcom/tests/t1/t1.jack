@@ -4,8 +4,12 @@ class Main {
 
     function void main(int i, int b, bruh j) {
         var int a;
-        let a = 123 + (6 * 5) - 2;
-        do bruh.test(a, b, 345);
+        let a = 123 + (-6 * 5) - 2;
+        do bruh.test(123, a, a, b);
+        return;
+    }
+
+    function void fnZeroArgs() {
         return;
     }
 

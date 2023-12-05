@@ -6,6 +6,7 @@
 #include <jcom/cmp/st/smta.h>
 
 #include <algorithm>
+#include <bitset>
 
 namespace jcom
 {
@@ -18,8 +19,13 @@ namespace jcom
 	{
 		{ "-", "sub" },
 		{ "+", "add" },
-		{ "*", "call Math.multiply" }, // OS Call
-		{ "/", "call Math.divide" },	// OS Call
+		{ "*", "call Math.multiply 2" }, // OS Call
+		{ "/", "call Math.divide 2" },	// OS Call
+		{ ">", "gt" },
+		{ "<", "lt" },
+		{ "=", "eq" },
+		{ "&", "and" },
+		{ "|", "or" },
 	};
 
 	const cmap jalr::mContexts
@@ -228,13 +234,16 @@ namespace jcom
 
 		mFile.Next(); // skip function keyword
 		mFile.Next(); // skip return type
-		Label(mClassContext + "." + mFile.Get().content);
+		mFunctionContext = mFile.Get().content; // get function name
+		mLabelStack = 0;
 
 		// Reset current table
 		symtable& table{ mTables.at(mCurrentTable) };
 		table = symtable{};
 
 		table.Define("this", mClassContext, jpool::ARG);
+
+		int32_t args{ 0 };
 
 		while (mFile.Available() && !breaker)
 		{
@@ -243,8 +252,12 @@ namespace jcom
 
 			switch (entry)
 			{
+				case(jdesc::ParameterList): { 
+					args += ParseParameterList();
+					WriteLine("\nfunction " + mClassContext + "." + mFunctionContext + " " + std::to_string(args));
+					break; 
+				}
 				case(jdesc::VarDec):		{ ParseSubroutineVar(); break; }
-				case(jdesc::ParameterList): { ParseParameterList(); break; }
 				case(jdesc::SubroutineBody):{ ParseSubroutineBody(); break; }
 				case(jdesc::BREAKER):		{ breaker = true; break; }
 				default:					{ mFile.Next(); break; } // should never get this if syntax is correct
@@ -281,10 +294,11 @@ namespace jcom
 		}
 	}
 
-	void jalr::ParseParameterList()
+	int32_t jalr::ParseParameterList()
 	{
 		//WriteToken();
 		mFile.Next();
+		int32_t count{ 0 };
 
 		token kind{};
 		while (mFile.Available())
@@ -303,6 +317,7 @@ namespace jcom
 				else
 				{
 					table.Define(tk, kind, jpool::ARG);
+					count++;
 					kind = "";
 				}
 			}
@@ -311,6 +326,7 @@ namespace jcom
 		}
 
 		mFile.Next();
+		return count;
 	}
 
 	void jalr::ParseSubroutineBody()
@@ -406,31 +422,48 @@ namespace jcom
 	void jalr::ParseIfStatement()
 	{
 		bool breaker{ false };
+		token l1{ "branch." + mClassContext + "." + mFunctionContext + std::to_string(mLabelStack++) };
+		token lif{ l1 + ".PASS" };
+		token lelse{ l1 + ".END" };
+		Label(l1);
+
+		bool hasElse{ false };
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::IfStatement) };
-			WriteTokenNext();
+			mFile.Next();
 
 			switch (entry)
 			{
-				case(jdesc::Expression): { ParseExpression(); break; }
-				case(jdesc::Statement): { ParseStatements(); break; }
+				case(jdesc::Expression): { 
+					ParseExpression();
+					WriteLine("not");
+					WriteLine("if-goto " + lif);
+					WriteLine("goto " + lelse);
+					break; 
+				}
+				case(jdesc::Statement): {
+					Label(lif);
+					ParseStatements(); 
+					break; 
+				}
 				case(jdesc::BREAKER): {
 					if (mFile.Get().content == "else")
 					{
-						//WriteTokenNext(); // write } and move
-						WriteTokenNext(); // write else and move
-						WriteTokenNext(); // write { and move
+						hasElse = true;
+						mFile.Next();
+						mFile.Next();
+						Label(lelse);
 						ParseStatements();// start parsing statements
 					}
 					else
 					{
-						//WriteTokenNext();
 						breaker = true;
+						if (!hasElse)
+							Label(lelse);
 					}
 					break;
 				}
-				//default: //WriteTokenNext();
 			}
 		}
 	}
@@ -438,45 +471,67 @@ namespace jcom
 	void jalr::ParseWhileStatement()
 	{
 		// copied from if statement with minor changes
+		token l1{ "loop." + mClassContext + "." + mFunctionContext + std::to_string(mLabelStack++) };
+		token lif{ l1 + ".CONT" };
+		token lelse{ l1 + ".END" };
+		Label(l1);
+
 		bool breaker{ false };
+
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::IfStatement) };
-			WriteTokenNext();
+			//WriteTokenNext();
+			mFile.Next();
 
 			switch (entry)
 			{
-				case(jdesc::Expression): { ParseExpression(); break; }
+				case(jdesc::Expression): { 
+					ParseExpression();
+					WriteLine("not");
+					WriteLine("if-goto " + lif);
+					WriteLine("goto " + lelse);
+					break; 
+				}
 				case(jdesc::Statement): { ParseStatements(); break; }
-				case(jdesc::BREAKER): { breaker = true; break; }
+				case(jdesc::BREAKER): { 
+					breaker = true; 
+					Label(lelse);
+					break; 
+				}
 			}
 		}
 	}
 
-	void jalr::ParseExpressionList()
+	int32_t jalr::ParseExpressionList()
 	{
 		mFile.Next(); // skip keyword
+		int32_t count{ 0 };
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::ExpressionList) };
 			if (entry == jdesc::BREAKER)
 				break;
 			else
-				ParseExpression();
+				count += ParseExpression();
+			if (mFile.Get().content == ")")
+				break;
 			mFile.Next(); // skip keyword
 		}
 		mFile.Next(); // skip keyword
+		return count;
 	}
 
-	void jalr::ParseExpression()
+	int32_t jalr::ParseExpression()
 	{
 		std::stack<token> operatorStack{};
 
 		jdesc entry{ GetEntrypoint(jdesc::Expression) };
+		int32_t count{ 0 };
 
 		if (entry != jdesc::BREAKER)
 		{
-			ParseTerm(); // this advances file cursor
+			count += ParseTerm(); // this advances file cursor
 			const token& tk{ mFile.Get().content };
 			if (gOperatorSymbols.contains(tk)) // ignores PEMDAS for now
 			{
@@ -492,13 +547,18 @@ namespace jcom
 			const token& top{ operatorStack.top() };
 			WriteLine(gOperatorSymbols.at(top));
 			operatorStack.pop();
+			count--; // each of these consumes 1 variable
 		}
+
+		return count;
 	}
 
-	void jalr::ParseTerm()
+	int32_t jalr::ParseTerm()
 	{
 		token tk{ mFile.Get().content };
 		jtok type{ mFile.Get().type };
+
+		int32_t count{ 1 };
 
 		// Unary operator
 		switch (type)
@@ -522,7 +582,13 @@ namespace jcom
 				// null == 0
 				// false == 0
 				// true == -1
-				PushConstant((tk == "true") ? "-1" : "0");
+				if (tk == "true")
+				{
+					PushConstant("1");
+					WriteLine("neg");
+				}
+				else
+					PushConstant("0");
 				break;
 			}
 			case(jtok::Symbol):
@@ -533,18 +599,22 @@ namespace jcom
 					mFile.Next();
 					ParseTerm();
 					WriteLine("not");
+					return count; // return here because these are special cases without token skips
 				}
 				else if (tk == "-") // negate
 				{
 					mFile.Next();
 					ParseTerm();
 					WriteLine("neg");
+					return count; // return here because these are special cases without token skips
 				}
 				else if (tk == "(")
 				{
 					mFile.Next();
-					ParseExpression();
+					count = ParseExpression(); // count overwrite
 				}
+				else
+					count = 0;
 				break;
 			}
 			case(jtok::Id):
@@ -563,6 +633,7 @@ namespace jcom
 		}
 
 		mFile.Next();
+		return count;
 	}
 
 	void jalr::ParseSubroutineCall(token label)
@@ -578,18 +649,19 @@ namespace jcom
 		}
 
 		bool breaker{ false };
+		int32_t argumentCount{ 0 };
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::SubroutineCall) };
 			switch (entry)
 			{
-				case(jdesc::ExpressionList): { ParseExpressionList(); breaker = true; break; }
+				case(jdesc::ExpressionList): { argumentCount += ParseExpressionList(); breaker = true; break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
 				default: { mFile.Next();  break; }
 			}
 		}
 
-		WriteLine("call " + label);
+		WriteLine("call " + label + " " + std::to_string(argumentCount));
 		
 	}
 

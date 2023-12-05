@@ -33,7 +33,7 @@ namespace jcom
 		void ParseClass();
 		void ParseClassVar();
 		void ParseSubroutine();
-		void ParseParameterList();
+		int32_t ParseParameterList();
 		void ParseSubroutineBody();
 		void ParseSubroutineVar();
 		void ParseSubroutineCall(token prefix = ""); // soft rule, no headers
@@ -45,9 +45,9 @@ namespace jcom
 		void ParseIfStatement();
 		void ParseWhileStatement();
 
-		void ParseExpressionList();
-		void ParseExpression();
-		void ParseTerm();
+		int32_t ParseExpressionList();
+		int32_t ParseExpression();
+		int32_t ParseTerm();
 
 		bool ContextContains(entrymap& entries, jdesc context);
 		jdesc GetEntrypoint(jdesc context);
@@ -68,6 +68,8 @@ namespace jcom
 		std::ofstream& mOutFile;
 		jfile mFile;
 		token mClassContext{};
+		token mFunctionContext{};
+		int32_t mLabelStack{ 0 };
 		int32_t mCurrentTable{ 0 };
 		std::array<symtable, 2> mTables{};
 		static const cmap mContexts;

@@ -1,11 +1,11 @@
 
 class Main {
-    static boolean test, shaboingboing, bruh, aleight;
+    static boolean test, shaboingboing, bruh, alright;
 
     function void main(int i, int b, bruh j) {
         var SquareGame game;
         let game = game;
-        let game = 1 + ((((((7-7))))) - 2);
+        let game = -7 - 7;
         do game.run();
         do game.dispose();
         return;
@@ -14,9 +14,22 @@ class Main {
     function void more() {  // Added to test Jack syntax that is not used in
         var boolean b;      // the Square files.
         if (-b) {
+            do print();
         }
         else {              // There is no else keyword in the Square files.
+            let b = true;
         }
+
+        while(true)
+        {
+            if(b > 1){
+            
+            }
+            else
+            {
+            }
+        }
+
         return;
     }
 }
