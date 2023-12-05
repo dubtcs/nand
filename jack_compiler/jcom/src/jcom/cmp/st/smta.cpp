@@ -6,7 +6,7 @@ namespace jcom
 
 	std::unordered_map<token, jpool> gTokenToPool
 	{
-		{"field",	jpool::FIELD},
+		{"field",	jpool::THIS},
 		{"static",	jpool::STATIC},
 		{"arg",		jpool::ARG},
 		{"var",		jpool::LOCAL}
@@ -18,7 +18,9 @@ namespace jcom
 		{jpool::STATIC, "static"},
 		{jpool::TEMP,	"temp"},
 		{jpool::ARG,	"arguments"},
-		{jpool::LOCAL,	"local"}
+		{jpool::LOCAL,	"local"},
+		{jpool::THIS,	"this"},
+		{jpool::POINTER,"pointer"}
 	};
 
 	symtable::symtable()

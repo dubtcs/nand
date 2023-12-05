@@ -67,6 +67,7 @@ namespace jcom
 		std::ifstream& mInFile;
 		std::ofstream& mOutFile;
 		jfile mFile;
+		bool mIsMethod{ false }; // is the current function able to access member variables?
 		token mClassContext{};
 		token mFunctionContext{};
 		int32_t mLabelStack{ 0 };

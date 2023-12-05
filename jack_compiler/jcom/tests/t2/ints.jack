@@ -1,14 +1,26 @@
 
 class Main {
     static boolean test, shaboingboing, bruh, alright;
+    field int i, j, k, l;
 
     function void main(int i, int b, bruh j) {
         var SquareGame game;
-        let game = game;
-        let game = -7 - 7;
+        let game = 1;
         do game.run();
         do game.dispose();
         return;
+    }
+
+    method void PUSHPOINTER()
+    {
+        var int b;
+        let i = other.GETNUM() + 1;
+        return 0;
+    }
+
+    constructor Main new()
+    {
+        return this;
     }
 
     function void more() {  // Added to test Jack syntax that is not used in
@@ -19,17 +31,6 @@ class Main {
         else {              // There is no else keyword in the Square files.
             let b = true;
         }
-
-        while(true)
-        {
-            if(b > 1){
-            
-            }
-            else
-            {
-            }
-        }
-
         return;
     }
 }

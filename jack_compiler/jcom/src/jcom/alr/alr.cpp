@@ -23,7 +23,7 @@ namespace jcom
 		{ "/", "call Math.divide 2" },	// OS Call
 		{ ">", "gt" },
 		{ "<", "lt" },
-		{ "=", "eq" },
+		{ "=", "eq" }, // bruh
 		{ "&", "and" },
 		{ "|", "or" },
 	};
@@ -203,12 +203,11 @@ namespace jcom
 		}
 	}
 
-	// this and class var can be condensed now that xml is meaningless
 	void jalr::ParseClassVar()
 	{
 		bool breaker{ false };
 
-		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dnagerous, no index checking
+		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dangerous, no index 
 		mFile.Next();
 		std::string varKind{ mFile.Get().content };
 		mFile.Next();
@@ -220,7 +219,7 @@ namespace jcom
 			const token& tk{ mFile.Get().content };
 			if ((!breaker) && (tk != ","))
 			{
-				mTables.at(mCurrentTable).Define(tk, varKind, varPool);
+				mTables.at(TABLE_CLASS).Define(tk, varKind, varPool);
 				const syminfo& info{ mTables.at(mCurrentTable).GetInfo(tk) };
 			}
 			mFile.Next();
@@ -232,7 +231,9 @@ namespace jcom
 		bool breaker{ false };
 		mCurrentTable = TABLE_SUB;
 
-		mFile.Next(); // skip function keyword
+		bool isConstructor{ mFile.Get().content == "constructor" };
+		mIsMethod = ((mFile.Get().content == "method") || isConstructor); // skip function keyword
+		mFile.Next();
 		mFile.Next(); // skip return type
 		mFunctionContext = mFile.Get().content; // get function name
 		mLabelStack = 0;
@@ -241,7 +242,8 @@ namespace jcom
 		symtable& table{ mTables.at(mCurrentTable) };
 		table = symtable{};
 
-		table.Define("this", mClassContext, jpool::ARG);
+		if (mIsMethod)
+			table.Define("this", mClassContext, jpool::POINTER);
 
 		int32_t args{ 0 };
 
@@ -253,12 +255,25 @@ namespace jcom
 			switch (entry)
 			{
 				case(jdesc::ParameterList): { 
-					args += ParseParameterList();
+					args += ParseParameterList() + (mIsMethod - isConstructor); // isMethod either 0 or 1 so we can just add :D
 					WriteLine("\nfunction " + mClassContext + "." + mFunctionContext + " " + std::to_string(args));
+					if (mIsMethod && !isConstructor)
+					{
+						WriteLine("push argument 0"); // set pointer
+						WriteLine("pop pointer 0"); // set this
+					}
 					break; 
 				}
 				case(jdesc::VarDec):		{ ParseSubroutineVar(); break; }
-				case(jdesc::SubroutineBody):{ ParseSubroutineBody(); break; }
+				case(jdesc::SubroutineBody):{ 
+					if (isConstructor)
+					{
+						PushConstant(std::to_string(mTables.at(TABLE_CLASS).GetPoolCount(jpool::THIS)));
+						WriteLine("call Memory.alloc 1"); // OS level function
+						WriteLine("pop pointer 0");
+					}
+					ParseSubroutineBody(); 
+					break; }
 				case(jdesc::BREAKER):		{ breaker = true; break; }
 				default:					{ mFile.Next(); break; } // should never get this if syntax is correct
 			}
@@ -587,8 +602,10 @@ namespace jcom
 					PushConstant("1");
 					WriteLine("neg");
 				}
-				else
+				else if (tk == "false" || tk == "null")
 					PushConstant("0");
+				else if (tk == "this")
+					Push(tk, TABLE_SUB);
 				break;
 			}
 			case(jtok::Symbol):
@@ -620,9 +637,24 @@ namespace jcom
 			case(jtok::Id):
 			{
 				const token& next{ mFile.PeekNext().content };
-				if (next == "[" || next == ".")
+				if (next == "[" || next == "." || next == "(")
 				{
 					// array or subroutine
+					if (next == "(")
+					{
+						ParseSubroutineCall();
+						return count;
+					}
+					else if (next == ".")
+					{
+						mFile.Next();
+						ParseSubroutineCall(tk); // edge cases, return immediately
+						return count;
+					}
+					else
+					{
+						// arrays
+					}
 				}
 				else // just an ID
 				{
@@ -646,6 +678,11 @@ namespace jcom
 		{
 			mFile.Next();
 			label += "." + mFile.Get().content;
+		}
+		else
+		{ // method call
+			label = mFile.Get().content;
+			WriteLine("push pointer 0");
 		}
 
 		bool breaker{ false };
@@ -710,7 +747,11 @@ namespace jcom
 
 	void jalr::Pop(const token& name)
 	{
-		const syminfo& info{ mTables.at(mCurrentTable).GetInfo(name) };
+		const syminfo& info {
+			mTables.at(TABLE_SUB).Contains(name) ? 
+			mTables.at(TABLE_SUB).GetInfo(name) : 
+			mTables.at(TABLE_CLASS).GetInfo(name) // this doesn't even bother checking if it exists :/
+		};
 		WriteLine("pop " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
 	}
 

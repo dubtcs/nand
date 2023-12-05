@@ -1,15 +1,27 @@
 
 function Main.main 3
-push local 0
-pop local 0
-push constant 7
-neg
-push constant 7
-sub
+push constant 1
 pop local 0
 call game.run 0
 call game.dispose 0
 push constant 0
+return
+
+function Main.PUSHPOINTER 1
+push argument 0
+pop pointer 0
+call other.GETNUM 0
+push constant 1
+add
+pop this 0
+push constant 0
+return
+
+function Main.new 0
+push constant 4
+call Memory.alloc 1
+pop pointer 0
+push pointer 0
 return
 
 function Main.more 0
@@ -20,26 +32,11 @@ not
 if-goto branch.Main.more0.PASS
 goto branch.Main.more0.END
 label branch.Main.more0.PASS
-call Main 0
+push pointer 0
+call ( 0
 label branch.Main.more0.END
 push constant 1
 neg
 pop local 0
-label loop.Main.more1
-push constant 1
-neg
-not
-if-goto loop.Main.more1.CONT
-goto loop.Main.more1.END
-label branch.Main.more2
-push local 0
-push constant 1
-gt
-not
-if-goto branch.Main.more2.PASS
-goto branch.Main.more2.END
-label branch.Main.more2.PASS
-label branch.Main.more2.END
-label loop.Main.more1.END
 push constant 0
 return
