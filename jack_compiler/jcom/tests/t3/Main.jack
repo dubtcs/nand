@@ -4,10 +4,8 @@ class Point {
 
 	function void Main()
 	{
-		var int x;
-		var Point p;
-		let p = Point.new();
-		let x = p.getx();
+		var int i, b;
+		let i[1] = b[5] + b[4];
 		return;
 	}
 

@@ -11,10 +11,6 @@
 namespace jcom
 {
 
-	//const emap2 jalr::mFnPtrs{
-	//	{"class", &jalr::ParseClass}
-	//};
-
 	static const std::unordered_map<token, token> gOperatorSymbols
 	{
 		{ "-", "sub" },
@@ -391,6 +387,10 @@ namespace jcom
 
 		token name{ mFile.Get().content };
 
+		bool isArray{ mFile.PeekNext().content == "[" };
+		if (isArray)
+			ParseArrayIndex();
+
 		while (mFile.Available())
 		{
 			jdesc entry{ GetEntrypoint(jdesc::LetStatement) };
@@ -401,7 +401,15 @@ namespace jcom
 				ParseExpression();
 		}
 
-		Pop(name);
+		if (isArray)
+		{
+			WriteLine("pop temp 0");	// value of RHS
+			WriteLine("pop pointer 1"); // SP now acts as THAT pointer to LHS
+			WriteLine("push temp 0");	// 
+			WriteLine("pop that 0");
+		}
+		else
+			Pop(name);
 
 	}
 
@@ -657,7 +665,10 @@ namespace jcom
 					}
 					else
 					{
-						// arrays
+						ParseArrayIndex();
+						WriteLine("pop pointer 1"); // pop memory address into THAT pointer
+						WriteLine("push that 0");	// push THAT address value onto stack
+						return count;
 					}
 				}
 				else // just an ID
@@ -670,6 +681,21 @@ namespace jcom
 
 		mFile.Next();
 		return count;
+	}
+
+	void jalr::ParseArrayIndex()
+	{
+		const token& tk{ mFile.Get().content };
+		Push(tk, TablesContain(tk) - 1);
+		mFile.Next(); // skip id 
+
+		mFile.Next(); // skip [
+		ParseExpression();
+		WriteLine("add"); // adjust memory pointer
+		mFile.Next(); // skip ]
+
+		// do not pop. This is handled by caller
+		return;
 	}
 
 	void jalr::ParseSubroutineCall(token label)
@@ -767,13 +793,6 @@ namespace jcom
 			mTables.at(TABLE_SUB).GetInfo(name) : 
 			mTables.at(TABLE_CLASS).GetInfo(name) // this doesn't even bother checking if it exists :/
 		};
-		//syminfo info{};
-		//if (mTables.at(TABLE_SUB).Contains(name))
-		//	info = mTables.at(TABLE_SUB).GetInfo(name);
-		//else
-		//	if (mIsMethod)
-		//		if (mTables.at(TABLE_CLASS).Contains(name))
-		//			info = mTables.at(TABLE_CLASS).GetInfo(name);
 		WriteLine("pop " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
 	}
 
@@ -814,64 +833,3 @@ namespace jcom
 	}
 
 }
-
-
-/*
-
-bool breaker{ false };
-		bool isNested{ false };
-		while (mFile.Available() && !breaker)
-		{
-			jdesc entry{ GetEntrypoint(jdesc::Term) };
-			const token tk{ mFile.Get().content };
-			mFile.Next();
-			switch (entry)
-			{
-				case(jdesc::Expression): { ParseExpression(); break; }
-				case(jdesc::Term): { ParseTerm(); break; }
-				case(jdesc::BREAKER):
-				{
-					breaker = true;
-					WriteTokenNext();
-					break;
-				}
-				default:
-				{
-					const token& next{ mFile.Get().content };
-					if (next == "[") // handle arrays
-					{
-						isNested = true;
-						WriteTokenNext(); // Write opening brace/bracket
-						ParseExpression();
-					}
-					else if (next == "(" || next == ".")
-					{
-						ParseSubroutineCall();
-						breaker = true;
-					}
-					else
-					{
-						// Not a subroutine call or array
-						if (IsNumber(tk))
-						{
-							PushConstant(tk);
-						}
-						else
-						{
-							// Can do this only because there is a limit of only 2 scopes in Jack
-							if ((mCurrentTable > 0) && mTables.at(TABLE_SUB).Contains(tk))
-								Push(tk, TABLE_SUB);
-							else if (mTables.at(TABLE_CLASS).Contains(tk))
-								Push(tk, TABLE_CLASS);
-							else if (gOperatorSymbols.contains(tk))
-								WriteLine(gOperatorSymbols.at(tk));
-
-							breaker = true;
-						}
-					}
-					break;
-				}
-			}
-		}
-
-*/

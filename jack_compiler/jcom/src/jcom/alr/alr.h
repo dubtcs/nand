@@ -45,6 +45,8 @@ namespace jcom
 		void ParseIfStatement();
 		void ParseWhileStatement();
 
+		void ParseArrayIndex();
+
 		int32_t ParseExpressionList();
 		int32_t ParseExpression();
 		int32_t ParseTerm();
