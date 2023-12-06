@@ -234,6 +234,7 @@ namespace jcom
 		bool isConstructor{ mFile.Get().content == "constructor" };
 		mIsMethod = ((mFile.Get().content == "method") || isConstructor); // skip function keyword
 		mFile.Next();
+		//token rType{ mFile.Get().content };
 		mFile.Next(); // skip return type
 		mFunctionContext = mFile.Get().content; // get function name
 		mLabelStack = 0;
@@ -412,7 +413,7 @@ namespace jcom
 		{
 			jdesc entry{ GetEntrypoint(jdesc::DoStatement) };
 			if (entry == jdesc::SubroutineCall)
-				ParseSubroutineCall((mFile.Get().content == ".") ? prev : mClassContext); // check if it's external or not, use current class context if none provided
+				ParseSubroutineCall(prev); // check if it's external or not, use current class context if none provided
 			else
 			{
 				prev = mFile.Get().content;
@@ -421,6 +422,9 @@ namespace jcom
 			if (entry == jdesc::BREAKER)
 				break;
 		}
+
+		// dump required rval
+		WriteLine("pop temp 0");
 
 	}
 
@@ -674,19 +678,28 @@ namespace jcom
 		// Check if id is followed by parenthesis or a .
 		// eg joe.""; or mama();
 
+		bool isMethod{ false }; // add this to argumentCount to adjust for OOP calls
 		if (mFile.Get().content == ".")
 		{
 			mFile.Next();
+			int32_t tableIndex{ TablesContain(label) };
+			if (tableIndex--) // subtract 1 to get the true tabel index
+			{
+				// this is a method call to an outside object, eg joe.mama(); where joe is the var name
+				Push(label, tableIndex);
+				label = mTables.at(tableIndex).GetInfo(label).classType;
+				isMethod = true;
+			}
 			label += "." + mFile.Get().content;
 		}
 		else
-		{ // method call
-			label = mFile.Get().content;
+		{ // internal method call
+			label = mClassContext + "." + mFile.Get().content; // + label;
 			WriteLine("push pointer 0");
 		}
 
 		bool breaker{ false };
-		int32_t argumentCount{ 0 };
+		int32_t argumentCount{ isMethod };
 		while (mFile.Available() && !breaker)
 		{
 			jdesc entry{ GetEntrypoint(jdesc::SubroutineCall) };
@@ -699,6 +712,8 @@ namespace jcom
 		}
 
 		WriteLine("call " + label + " " + std::to_string(argumentCount));
+		//if (argumentCount <= 0)
+			//WriteLine("pop temp 0");
 		
 	}
 
@@ -752,7 +767,22 @@ namespace jcom
 			mTables.at(TABLE_SUB).GetInfo(name) : 
 			mTables.at(TABLE_CLASS).GetInfo(name) // this doesn't even bother checking if it exists :/
 		};
+		//syminfo info{};
+		//if (mTables.at(TABLE_SUB).Contains(name))
+		//	info = mTables.at(TABLE_SUB).GetInfo(name);
+		//else
+		//	if (mIsMethod)
+		//		if (mTables.at(TABLE_CLASS).Contains(name))
+		//			info = mTables.at(TABLE_CLASS).GetInfo(name);
 		WriteLine("pop " + gPoolToToken.at(info.pool) + " " + std::to_string(info.index));
+	}
+
+	int32_t jalr::TablesContain(const token& name)
+	{
+		if (mTables.at(TABLE_SUB).Contains(name))
+			return (TABLE_SUB + 1);
+		else
+			return (TABLE_CLASS + mTables.at(TABLE_CLASS).Contains(name));
 	}
 
 	void jalr::WriteLine(const std::string& content)

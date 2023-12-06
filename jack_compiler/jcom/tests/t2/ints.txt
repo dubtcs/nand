@@ -1,42 +1,30 @@
 
 function Main.main 3
-push constant 1
-pop local 0
-call game.run 0
-call game.dispose 0
+push local 1
+push local 0
+call Main.more 2
+pop arguments 2
 push constant 0
 return
 
 function Main.PUSHPOINTER 1
 push argument 0
 pop pointer 0
-call other.GETNUM 0
-push constant 1
-add
+push constant 3459
 pop this 0
-push constant 0
+push constant 2
+pop this 2
+push constant 1000
+neg
+pop this 1
+push this 2
 return
 
-function Main.new 0
-push constant 4
-call Memory.alloc 1
+function Main.more 2
+push argument 0
 pop pointer 0
 push pointer 0
-return
-
-function Main.more 0
-label branch.Main.more0
-push local 0
-neg
-not
-if-goto branch.Main.more0.PASS
-goto branch.Main.more0.END
-label branch.Main.more0.PASS
-push pointer 0
-call ( 0
-label branch.Main.more0.END
-push constant 1
-neg
-pop local 0
-push constant 0
+call Main.PUSHPOINTER 0
+pop temp 0
+push arguments 0
 return

@@ -4,33 +4,22 @@ class Main {
     field int i, j, k, l;
 
     function void main(int i, int b, bruh j) {
-        var SquareGame game;
-        let game = 1;
-        do game.run();
-        do game.dispose();
+        var Main m1, m2;
+        let j = m2.more(m1);
         return;
     }
 
     method void PUSHPOINTER()
     {
         var int b;
-        let i = other.GETNUM() + 1;
-        return 0;
+        let i = 3459;
+        let k = 2;
+        let j = -1000;
+        return k;
     }
 
-    constructor Main new()
-    {
-        return this;
-    }
-
-    function void more() {  // Added to test Jack syntax that is not used in
-        var boolean b;      // the Square files.
-        if (-b) {
-            do print();
-        }
-        else {              // There is no else keyword in the Square files.
-            let b = true;
-        }
-        return;
+    method void more(Main other) {  // Added to test Jack syntax that is not used in
+        do PUSHPOINTER();
+        return other;
     }
 }

@@ -1,0 +1,55 @@
+
+function Point.Main 0
+call Point.new 0
+pop local 1
+push local 1
+call Point.getx 1
+pop local 0
+push constant 0
+return
+
+function Point.new 2
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push arguments 0
+pop this 0
+push arguments 1
+pop this 1
+push pointer 0
+return
+
+function Point.getx 1
+push argument 0
+pop pointer 0
+push this 0
+return
+
+function Point.gety 1
+push argument 0
+pop pointer 0
+push this 1
+return
+
+function Point.add 2
+push argument 0
+pop pointer 0
+push this 0
+push arguments 0
+call Point.getx 1
+add
+push this 1
+push arguments 0
+call Point.gety 1
+add
+add
+return
+
+function Point.print 1
+push argument 0
+pop pointer 0
+call System.print 0
+pop temp 0
+push pointer 0
+call Point.getx 0
+return

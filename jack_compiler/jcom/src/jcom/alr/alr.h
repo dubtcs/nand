@@ -59,6 +59,8 @@ namespace jcom
 
 		void Label(const token& label);
 
+		int32_t TablesContain(const token& name); // 0 == does not exist. non zero, subtract 1 for table index
+
 		void WriteCommand(const std::string& cmd);
 		void WriteToken();
 		void WriteTokenNext();
