@@ -3,19 +3,19 @@ function Ball.new 0
 push constant 15
 call Memory.alloc 1
 pop pointer 0
-push argument 0
-pop this 0
 push argument 1
-pop this 1
+pop this 0
 push argument 2
-pop this 10
+pop this 1
 push argument 3
+pop this 10
+push argument 4
 push constant 6
 sub
 pop this 11
-push argument 4
-pop this 12
 push argument 5
+pop this 12
+push argument 6
 push constant 6
 sub
 pop this 13
@@ -94,11 +94,11 @@ return
 function Ball.setDestination 3  
 push argument 0
 pop pointer 0
-push argument 0
+push argument 1
 push this 0
 sub
 pop this 2
-push argument 1
+push argument 2
 push this 1
 sub
 pop this 3
@@ -125,21 +125,21 @@ pop local 0
 push local 2
 pop local 1
 push this 1
-push argument 1
+push argument 2
 lt
 pop this 8
 push this 0
-push argument 0
+push argument 1
 lt
 pop this 9
 goto branch.Ball.setDestination0.END
 label branch.Ball.setDestination0.ELSE
 push this 0
-push argument 0
+push argument 1
 lt
 pop this 8
 push this 1
-push argument 1
+push argument 2
 lt
 pop this 9
 label branch.Ball.setDestination0.END
@@ -355,7 +355,7 @@ push constant 10
 call Math.divide 2
 pop local 3
 label branch.Ball.bounce0.BEGIN
-push argument 0
+push argument 1
 push constant 0
 eq
 not
@@ -371,14 +371,14 @@ push this 2
 push constant 0
 lt
 not
-push argument 0
+push argument 1
 push constant 1
 eq
 and
 push this 2
 push constant 0
 lt
-push argument 0
+push argument 1
 push constant 1
 neg
 eq

@@ -33,7 +33,7 @@ namespace jcom
 		void ParseClass();
 		void ParseClassVar();
 		void ParseSubroutine();
-		int32_t ParseParameterList();
+		int32_t ParseParameterList(bool isConstructor = false);
 		uint8_t ParseSubroutineBody();
 		uint8_t ParseSubroutineVar();
 		void ParseSubroutineCall(token prefix = ""); // soft rule, no headers

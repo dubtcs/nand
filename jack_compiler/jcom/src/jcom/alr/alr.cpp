@@ -253,7 +253,7 @@ namespace jcom
 			switch (entry)
 			{
 				case(jdesc::ParameterList): {
-					ParseParameterList();
+					ParseParameterList(isConstructor);
 					argPointer = Write("\nfunction " + mClassContext + "." + mFunctionContext + " ");
 					WriteLine("   "); // 3 character reserved for 8 bit int
 					if (mIsMethod && !isConstructor)
@@ -319,11 +319,14 @@ namespace jcom
 		return count;
 	}
 
-	int32_t jalr::ParseParameterList()
+	int32_t jalr::ParseParameterList(bool isConstructor)
 	{
 		//WriteToken();
 		mFile.Next();
 		int32_t count{ 0 };
+
+		if (mIsMethod && !isConstructor) // supplying a dummy var to account for THIS pointer as arg 0
+			mTables.at(TABLE_SUB).Define("//ARG_OFFSET", "//ILLEGAL_TOKEN", jpool::ARG);
 
 		token kind{};
 		while (mFile.Available())
