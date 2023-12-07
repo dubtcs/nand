@@ -1,0 +1,227 @@
+
+function SquareGame.new 0  
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push constant 0
+push constant 0
+push constant 30
+call Square.new 3
+pop this 0
+push constant 0
+pop this 1
+push pointer 0
+return
+
+function SquareGame.dispose 0  
+push argument 0
+pop pointer 0
+push this 0
+call Square.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+
+function SquareGame.moveSquare 0  
+push argument 0
+pop pointer 0
+label branch.SquareGame.moveSquare0.BEGIN
+push this 1
+push constant 1
+eq
+not
+if-goto branch.SquareGame.moveSquare0.ELSE
+goto branch.SquareGame.moveSquare0.IF
+label branch.SquareGame.moveSquare0.IF
+push this 0
+call Square.moveUp 1
+pop temp 0
+goto branch.SquareGame.moveSquare0.END
+label branch.SquareGame.moveSquare0.ELSE
+label branch.SquareGame.moveSquare0.END
+label branch.SquareGame.moveSquare1.BEGIN
+push this 1
+push constant 2
+eq
+not
+if-goto branch.SquareGame.moveSquare1.ELSE
+goto branch.SquareGame.moveSquare1.IF
+label branch.SquareGame.moveSquare1.IF
+push this 0
+call Square.moveDown 1
+pop temp 0
+goto branch.SquareGame.moveSquare1.END
+label branch.SquareGame.moveSquare1.ELSE
+label branch.SquareGame.moveSquare1.END
+label branch.SquareGame.moveSquare2.BEGIN
+push this 1
+push constant 3
+eq
+not
+if-goto branch.SquareGame.moveSquare2.ELSE
+goto branch.SquareGame.moveSquare2.IF
+label branch.SquareGame.moveSquare2.IF
+push this 0
+call Square.moveLeft 1
+pop temp 0
+goto branch.SquareGame.moveSquare2.END
+label branch.SquareGame.moveSquare2.ELSE
+label branch.SquareGame.moveSquare2.END
+label branch.SquareGame.moveSquare3.BEGIN
+push this 1
+push constant 4
+eq
+not
+if-goto branch.SquareGame.moveSquare3.ELSE
+goto branch.SquareGame.moveSquare3.IF
+label branch.SquareGame.moveSquare3.IF
+push this 0
+call Square.moveRight 1
+pop temp 0
+goto branch.SquareGame.moveSquare3.END
+label branch.SquareGame.moveSquare3.ELSE
+label branch.SquareGame.moveSquare3.END
+push constant 5
+call Sys.wait 1
+pop temp 0
+push constant 0
+return
+
+function SquareGame.run 2  
+push argument 0
+pop pointer 0
+push constant 0
+pop local 1
+label loop.SquareGame.run0
+push local 1
+not
+not
+if-goto loop.SquareGame.run0.END
+label loop.SquareGame.run1
+push local 0
+push constant 0
+eq
+not
+if-goto loop.SquareGame.run1.END
+call Keyboard.keyPressed 0
+pop local 0
+push pointer 0
+call SquareGame.moveSquare 1
+pop temp 0
+goto loop.SquareGame.run1
+label loop.SquareGame.run1.END
+label branch.SquareGame.run2.BEGIN
+push local 0
+push constant 81
+eq
+not
+if-goto branch.SquareGame.run2.ELSE
+goto branch.SquareGame.run2.IF
+label branch.SquareGame.run2.IF
+push constant 1
+neg
+pop local 1
+goto branch.SquareGame.run2.END
+label branch.SquareGame.run2.ELSE
+label branch.SquareGame.run2.END
+label branch.SquareGame.run3.BEGIN
+push local 0
+push constant 90
+eq
+not
+if-goto branch.SquareGame.run3.ELSE
+goto branch.SquareGame.run3.IF
+label branch.SquareGame.run3.IF
+push this 0
+call Square.decSize 1
+pop temp 0
+goto branch.SquareGame.run3.END
+label branch.SquareGame.run3.ELSE
+label branch.SquareGame.run3.END
+label branch.SquareGame.run4.BEGIN
+push local 0
+push constant 88
+eq
+not
+if-goto branch.SquareGame.run4.ELSE
+goto branch.SquareGame.run4.IF
+label branch.SquareGame.run4.IF
+push this 0
+call Square.incSize 1
+pop temp 0
+goto branch.SquareGame.run4.END
+label branch.SquareGame.run4.ELSE
+label branch.SquareGame.run4.END
+label branch.SquareGame.run5.BEGIN
+push local 0
+push constant 131
+eq
+not
+if-goto branch.SquareGame.run5.ELSE
+goto branch.SquareGame.run5.IF
+label branch.SquareGame.run5.IF
+push constant 1
+pop this 1
+goto branch.SquareGame.run5.END
+label branch.SquareGame.run5.ELSE
+label branch.SquareGame.run5.END
+label branch.SquareGame.run6.BEGIN
+push local 0
+push constant 133
+eq
+not
+if-goto branch.SquareGame.run6.ELSE
+goto branch.SquareGame.run6.IF
+label branch.SquareGame.run6.IF
+push constant 2
+pop this 1
+goto branch.SquareGame.run6.END
+label branch.SquareGame.run6.ELSE
+label branch.SquareGame.run6.END
+label branch.SquareGame.run7.BEGIN
+push local 0
+push constant 130
+eq
+not
+if-goto branch.SquareGame.run7.ELSE
+goto branch.SquareGame.run7.IF
+label branch.SquareGame.run7.IF
+push constant 3
+pop this 1
+goto branch.SquareGame.run7.END
+label branch.SquareGame.run7.ELSE
+label branch.SquareGame.run7.END
+label branch.SquareGame.run8.BEGIN
+push local 0
+push constant 132
+eq
+not
+if-goto branch.SquareGame.run8.ELSE
+goto branch.SquareGame.run8.IF
+label branch.SquareGame.run8.IF
+push constant 4
+pop this 1
+goto branch.SquareGame.run8.END
+label branch.SquareGame.run8.ELSE
+label branch.SquareGame.run8.END
+label loop.SquareGame.run9
+push local 0
+push constant 0
+eq
+not
+not
+if-goto loop.SquareGame.run9.END
+call Keyboard.keyPressed 0
+pop local 0
+push pointer 0
+call SquareGame.moveSquare 1
+pop temp 0
+goto loop.SquareGame.run9
+label loop.SquareGame.run9.END
+goto loop.SquareGame.run0
+label loop.SquareGame.run0.END
+push constant 0
+return

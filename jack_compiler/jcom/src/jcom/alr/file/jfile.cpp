@@ -30,20 +30,37 @@ namespace jcom
 				{
 					if (c != ' ' && c != '\t')
 					{
-
 						if (c == '/') // comments
 						{
-							if (mCursor < (mContent.size() - 1))
+							if (mCursor++ < (mContent.size() - 1))
 							{
 								const char& nch{ mContent[mCursor + 1] };
 								if ((nch == '/') || (nch == '*'))
 								{
-									mCursor = mContent.size();
+									if (nch == '*')
+										mComplexComment = true;
+									else
+										mCursor = mContent.size();
 									CheckContent();
 									continue;
 								}
 							}
-							
+						}
+						if (mComplexComment)
+						{
+							//std::cout << c;
+							if (c == '*')
+							{
+								if (mCursor < (mContent.size() - 1))
+								{
+									const char& nch{ mContent[mCursor + 1] };
+									if ((nch == '/'))
+										mComplexComment = false;
+								}
+							}
+							mCursor++;
+							CheckContent();
+							continue;
 						}
 
 						if (gKeywords.contains(token{ c }))

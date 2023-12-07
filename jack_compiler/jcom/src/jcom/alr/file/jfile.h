@@ -33,6 +33,7 @@ namespace jcom
 		size_t mCursor{ 0 };
 		jpair mCurrent{};
 		jpair mNext{};
+		bool mComplexComment{ false };
 		std::ifstream& mFile;
 		std::string mContent{};
 	};

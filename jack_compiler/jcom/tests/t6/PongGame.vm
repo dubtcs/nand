@@ -1,0 +1,354 @@
+
+function PongGame.new 0  
+push constant 7
+call Memory.alloc 1
+pop pointer 0
+call Screen.clearScreen 0
+pop temp 0
+push constant 50
+pop this 6
+push constant 230
+push constant 229
+push this 6
+push constant 7
+call Bat.new 4
+pop this 0
+push constant 253
+push constant 222
+push constant 0
+push constant 511
+push constant 0
+push constant 229
+call Ball.new 6
+pop this 1
+push this 1
+push constant 400
+push constant 0
+call Ball.setDestination 3
+pop temp 0
+push constant 0
+push constant 238
+push constant 511
+push constant 240
+call Screen.drawRectangle 4
+pop temp 0
+push constant 22
+push constant 0
+call Output.moveCursor 2
+pop temp 0
+push constant 8
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 48
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 0
+pop this 3
+push constant 0
+pop this 4
+push constant 0
+pop this 2
+push constant 0
+pop this 5
+push pointer 0
+return
+
+function PongGame.dispose 0  
+push argument 0
+pop pointer 0
+push this 0
+call Bat.dispose 1
+pop temp 0
+push this 1
+call Ball.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+
+function PongGame.newInstance 0  
+call PongGame.new 0
+pop static 0
+push constant 0
+return
+
+function PongGame.getInstance 0  
+push static 0
+return
+
+function PongGame.run 1  
+push argument 0
+pop pointer 0
+label loop.PongGame.run0
+push this 3
+not
+not
+if-goto loop.PongGame.run0.END
+label loop.PongGame.run1
+push local 0
+push constant 0
+eq
+push this 3
+not
+and
+not
+if-goto loop.PongGame.run1.END
+call Keyboard.keyPressed 0
+pop local 0
+push this 0
+call Bat.move 1
+pop temp 0
+push pointer 0
+call PongGame.moveBall 1
+pop temp 0
+push constant 50
+call Sys.wait 1
+pop temp 0
+goto loop.PongGame.run1
+label loop.PongGame.run1.END
+label branch.PongGame.run2.BEGIN
+push local 0
+push constant 130
+eq
+not
+if-goto branch.PongGame.run2.ELSE
+goto branch.PongGame.run2.IF
+label branch.PongGame.run2.IF
+push this 0
+push constant 1
+call Bat.setDirection 2
+pop temp 0
+goto branch.PongGame.run2.END
+label branch.PongGame.run2.ELSE
+label branch.PongGame.run3.BEGIN
+push local 0
+push constant 132
+eq
+not
+if-goto branch.PongGame.run3.ELSE
+goto branch.PongGame.run3.IF
+label branch.PongGame.run3.IF
+push this 0
+push constant 2
+call Bat.setDirection 2
+pop temp 0
+goto branch.PongGame.run3.END
+label branch.PongGame.run3.ELSE
+label branch.PongGame.run4.BEGIN
+push local 0
+push constant 140
+eq
+not
+if-goto branch.PongGame.run4.ELSE
+goto branch.PongGame.run4.IF
+label branch.PongGame.run4.IF
+push constant 1
+neg
+pop this 3
+goto branch.PongGame.run4.END
+label branch.PongGame.run4.ELSE
+label branch.PongGame.run4.END
+label branch.PongGame.run3.END
+label branch.PongGame.run2.END
+label loop.PongGame.run5
+push local 0
+push constant 0
+eq
+not
+push this 3
+not
+and
+not
+if-goto loop.PongGame.run5.END
+call Keyboard.keyPressed 0
+pop local 0
+push this 0
+call Bat.move 1
+pop temp 0
+push pointer 0
+call PongGame.moveBall 1
+pop temp 0
+push constant 50
+call Sys.wait 1
+pop temp 0
+goto loop.PongGame.run5
+label loop.PongGame.run5.END
+goto loop.PongGame.run0
+label loop.PongGame.run0.END
+label branch.PongGame.run6.BEGIN
+push this 3
+not
+if-goto branch.PongGame.run6.ELSE
+goto branch.PongGame.run6.IF
+label branch.PongGame.run6.IF
+push constant 10
+push constant 27
+call Output.moveCursor 2
+pop temp 0
+push constant 9
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 109
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+goto branch.PongGame.run6.END
+label branch.PongGame.run6.ELSE
+label branch.PongGame.run6.END
+push constant 0
+return
+
+function PongGame.moveBall 5  
+push argument 0
+pop pointer 0
+push this 1
+call Ball.move 1
+pop this 2
+label branch.PongGame.moveBall0.BEGIN
+push this 2
+push constant 0
+gt
+push this 2
+push this 5
+eq
+not
+and
+not
+if-goto branch.PongGame.moveBall0.ELSE
+goto branch.PongGame.moveBall0.IF
+label branch.PongGame.moveBall0.IF
+push this 2
+pop this 5
+push constant 0
+pop local 0
+push this 0
+call Bat.getLeft 1
+pop local 1
+push this 0
+call Bat.getRight 1
+pop local 2
+push this 1
+call Ball.getLeft 1
+pop local 3
+push this 1
+call Ball.getRight 1
+pop local 4
+label branch.PongGame.moveBall1.BEGIN
+push this 2
+push constant 4
+eq
+not
+if-goto branch.PongGame.moveBall1.ELSE
+goto branch.PongGame.moveBall1.IF
+label branch.PongGame.moveBall1.IF
+push local 1
+push local 4
+gt
+push local 2
+push local 3
+lt
+or
+pop this 3
+label branch.PongGame.moveBall2.BEGIN
+push this 3
+not
+not
+if-goto branch.PongGame.moveBall2.ELSE
+goto branch.PongGame.moveBall2.IF
+label branch.PongGame.moveBall2.IF
+label branch.PongGame.moveBall3.BEGIN
+push local 4
+push local 1
+push constant 10
+add
+lt
+not
+if-goto branch.PongGame.moveBall3.ELSE
+goto branch.PongGame.moveBall3.IF
+label branch.PongGame.moveBall3.IF
+push constant 1
+neg
+pop local 0
+goto branch.PongGame.moveBall3.END
+label branch.PongGame.moveBall3.ELSE
+label branch.PongGame.moveBall4.BEGIN
+push local 3
+push local 2
+push constant 10
+sub
+gt
+not
+if-goto branch.PongGame.moveBall4.ELSE
+goto branch.PongGame.moveBall4.IF
+label branch.PongGame.moveBall4.IF
+push constant 1
+pop local 0
+goto branch.PongGame.moveBall4.END
+label branch.PongGame.moveBall4.ELSE
+label branch.PongGame.moveBall4.END
+label branch.PongGame.moveBall3.END
+push this 6
+push constant 2
+sub
+pop this 6
+push this 0
+push this 6
+call Bat.setWidth 2
+pop temp 0
+push this 4
+push constant 1
+add
+pop this 4
+push constant 22
+push constant 7
+call Output.moveCursor 2
+pop temp 0
+push this 4
+call Output.printInt 1
+pop temp 0
+goto branch.PongGame.moveBall2.END
+label branch.PongGame.moveBall2.ELSE
+label branch.PongGame.moveBall2.END
+goto branch.PongGame.moveBall1.END
+label branch.PongGame.moveBall1.ELSE
+label branch.PongGame.moveBall1.END
+push this 1
+push local 0
+call Ball.bounce 2
+pop temp 0
+goto branch.PongGame.moveBall0.END
+label branch.PongGame.moveBall0.ELSE
+label branch.PongGame.moveBall0.END
+push constant 0
+return

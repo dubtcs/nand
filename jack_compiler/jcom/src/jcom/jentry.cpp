@@ -1,5 +1,6 @@
 
 #include "jentry.h"
+#include <iostream>
 
 static inline constexpr const char* FILE_EXTENSION{ "vm" };
 
@@ -7,6 +8,7 @@ namespace jcom
 {
 	int CompileFile(const std::filesystem::path& path)
 	{
+		std::cout << "Compiling: " << path.string() << '\n';
 		if (path.extension() == JACK_EXTENSION)
 		{
 			std::ifstream inFile{ path.string() };
@@ -35,7 +37,7 @@ namespace jcom
 				bool fail{ false };
 				for (const std::filesystem::path& it : std::filesystem::recursive_directory_iterator(path))
 				{
-					fail = (fail || !CompileFile(it));
+					fail = (!CompileFile(it) || fail);
 				}
 				return fail;
 			}

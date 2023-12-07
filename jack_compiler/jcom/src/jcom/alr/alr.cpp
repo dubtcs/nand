@@ -620,8 +620,14 @@ namespace jcom
 			}
 			case(jtok::String):
 			{
+				std::string appending{};
+				PushConstant(std::to_string(tk.length()));
+				WriteLine("call String.new 1");
 				for (const char& c : tk)
-					WriteLine("String.appendChar(" + std::string{ c } + ")");
+				{
+					PushConstant(std::to_string(c));
+					WriteLine("call String.appendChar 2");
+				}
 				break;
 			}
 			case(jtok::Keyword):
@@ -740,7 +746,8 @@ namespace jcom
 		}
 		else
 		{ // internal method call
-			label = mClassContext + "." + mFile.Get().content; // + label;
+			isMethod = true;
+			label = mClassContext + "." + label;//mFile.Get().content; // + label;
 			WriteLine("push pointer 0");
 		}
 

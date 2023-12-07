@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
 #ifdef JCOM_DEBUG
-	jcom::CompileJack("tests/t4");
+	jcom::CompileJack("tests/t6");
 #endif
 	if (argc > 1)
 		return jcom::CompileJack(argv[1]);

@@ -1,4 +1,13 @@
 
+/*
+this is a class comment
+class class
+class
+var
+let
+THITEHIEIHWDA
+*/
+
 class Main {
     static boolean test;
 
@@ -10,6 +19,8 @@ class Main {
     }
 
     function void fnZeroArgs() {
+        var int j;
+        let j = "Test string";
         return;
     }
 
