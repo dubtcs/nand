@@ -242,7 +242,8 @@ namespace jcom
 		if (mIsMethod)
 			table.Define("this", mClassContext, jpool::POINTER);
 
-		int32_t args{ 0 };
+		uint8_t args{ std::numeric_limits<uint8_t>::max() }; // placeholder for character reservation, 255 not ideal to use 8 bit int but I want to limit it to 3 char in the file
+		std::streampos argPointer{};
 
 		while (mFile.Available() && !breaker)
 		{
@@ -251,26 +252,35 @@ namespace jcom
 
 			switch (entry)
 			{
-				case(jdesc::ParameterList): { 
-					args += ParseParameterList() + (mIsMethod - isConstructor); // isMethod either 0 or 1 so we can just add :D
-					WriteLine("\nfunction " + mClassContext + "." + mFunctionContext + " " + std::to_string(args));
+				case(jdesc::ParameterList): {
+					ParseParameterList();
+					argPointer = Write("\nfunction " + mClassContext + "." + mFunctionContext + " ");
+					WriteLine("   "); // 3 character reserved for 8 bit int
 					if (mIsMethod && !isConstructor)
 					{
 						WriteLine("push argument 0"); // set pointer
 						WriteLine("pop pointer 0"); // set this
 					}
-					break; 
+					break;
 				}
-				case(jdesc::VarDec):		{ ParseSubroutineVar(); break; }
-				case(jdesc::SubroutineBody):{ 
+				case(jdesc::VarDec):		{ ParseSubroutineVar(); break; } // this should never be called
+				case(jdesc::SubroutineBody): {
 					if (isConstructor)
 					{
 						PushConstant(std::to_string(mTables.at(TABLE_CLASS).GetPoolCount(jpool::THIS)));
 						WriteLine("call Memory.alloc 1"); // OS level function
 						WriteLine("pop pointer 0");
 					}
-					ParseSubroutineBody(); 
-					break; }
+
+					// go back and adjust local var label
+					args = ParseSubroutineBody();
+					std::streampos tempptr{ mOutFile.tellp() }; // store current write cursor
+					mOutFile.seekp(argPointer);
+					Write(std::to_string(args));
+					mOutFile.seekp(tempptr);
+
+					break; 
+				}
 				case(jdesc::BREAKER):		{ breaker = true; break; }
 				default:					{ mFile.Next(); break; } // should never get this if syntax is correct
 			}
@@ -281,9 +291,10 @@ namespace jcom
 	}
 
 	// this and class var can be condensed now that xml is meaningless
-	void jalr::ParseSubroutineVar()
+	uint8_t jalr::ParseSubroutineVar()
 	{
 		bool breaker{ false };
+		uint8_t count{ 0 };
 
 		jpool varPool{ gTokenToPool.at(mFile.Get().content) }; // dnagerous, no index checking
 		mFile.Next(); // skip keyword
@@ -300,10 +311,12 @@ namespace jcom
 			{
 				mTables.at(mCurrentTable).Define(tk, varKind, varPool);
 				const syminfo& info{ mTables.at(mCurrentTable).GetInfo(tk) };
+				count++;
 			}
 
 			mFile.Next();
 		}
+		return count;
 	}
 
 	int32_t jalr::ParseParameterList()
@@ -341,8 +354,9 @@ namespace jcom
 		return count;
 	}
 
-	void jalr::ParseSubroutineBody()
+	uint8_t jalr::ParseSubroutineBody()
 	{
+		uint8_t locals{ 0 };
 		mFile.Next();
 
 		bool breaker{ false };
@@ -351,13 +365,14 @@ namespace jcom
 			jdesc entry{ GetEntrypoint(jdesc::SubroutineBody) };
 			switch (entry)
 			{
-				case(jdesc::VarDec): { ParseSubroutineVar(); break; }
+				case(jdesc::VarDec): { locals += ParseSubroutineVar(); break; }
 				case(jdesc::Statement): { ParseStatements(); break; }
 				case(jdesc::BREAKER): { breaker = true; break; }
 				default: { mFile.Next(); break; }
 			}
 		}
 
+		return locals;
 	}
 
 	void jalr::ParseStatements()
@@ -450,9 +465,10 @@ namespace jcom
 	{
 		bool breaker{ false };
 		token l1{ "branch." + mClassContext + "." + mFunctionContext + std::to_string(mLabelStack++) };
-		token lif{ l1 + ".PASS" };
-		token lelse{ l1 + ".END" };
-		Label(l1);
+		token lif{ l1 + ".IF" };
+		token lelse{ l1 + ".ELSE" };
+		token lend{ l1 + ".END" };
+		Label(l1 + ".BEGIN");
 
 		bool hasElse{ false };
 		while (mFile.Available() && !breaker)
@@ -465,13 +481,14 @@ namespace jcom
 				case(jdesc::Expression): { 
 					ParseExpression();
 					WriteLine("not");
-					WriteLine("if-goto " + lif);
-					WriteLine("goto " + lelse);
+					WriteLine("if-goto " + lelse);
+					WriteLine("goto " + lif);
 					break; 
 				}
 				case(jdesc::Statement): {
 					Label(lif);
 					ParseStatements(); 
+					WriteLine("goto " + lend);
 					break; 
 				}
 				case(jdesc::BREAKER): {
@@ -488,6 +505,7 @@ namespace jcom
 						breaker = true;
 						if (!hasElse)
 							Label(lelse);
+						Label(lend);
 					}
 					break;
 				}
@@ -499,7 +517,6 @@ namespace jcom
 	{
 		// copied from if statement with minor changes
 		token l1{ "loop." + mClassContext + "." + mFunctionContext + std::to_string(mLabelStack++) };
-		token lif{ l1 + ".CONT" };
 		token lelse{ l1 + ".END" };
 		Label(l1);
 
@@ -516,11 +533,14 @@ namespace jcom
 				case(jdesc::Expression): { 
 					ParseExpression();
 					WriteLine("not");
-					WriteLine("if-goto " + lif);
-					WriteLine("goto " + lelse);
+					WriteLine("if-goto " + lelse);
 					break; 
 				}
-				case(jdesc::Statement): { ParseStatements(); break; }
+				case(jdesc::Statement): { 
+					ParseStatements();
+					WriteLine("goto " + l1);
+					break; 
+				}
 				case(jdesc::BREAKER): { 
 					breaker = true; 
 					Label(lelse);
@@ -564,7 +584,7 @@ namespace jcom
 			{
 				operatorStack.push(tk);
 				mFile.Next();
-				ParseExpression();
+				count += ParseExpression();
 			}
 		}
 
@@ -738,8 +758,6 @@ namespace jcom
 		}
 
 		WriteLine("call " + label + " " + std::to_string(argumentCount));
-		//if (argumentCount <= 0)
-			//WriteLine("pop temp 0");
 		
 	}
 
@@ -807,6 +825,12 @@ namespace jcom
 	void jalr::WriteLine(const std::string& content)
 	{
 		mOutFile << content << '\n';
+	}
+
+	std::streampos jalr::Write(const token& content)
+	{
+		mOutFile << content;
+		return mOutFile.tellp();
 	}
 
 	void jalr::WriteCommand(const std::string& cmd)

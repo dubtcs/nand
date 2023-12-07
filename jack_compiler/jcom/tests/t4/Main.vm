@@ -1,0 +1,131 @@
+
+function Main.main 1  
+push constant 8001
+push constant 16
+push constant 1
+neg
+call Main.fillMemory 3
+pop temp 0
+push constant 8000
+call Memory.peek 1
+pop local 0
+push local 0
+call Main.convert 1
+pop temp 0
+label branch.Main.main0.BEGIN
+push constant 1
+neg
+not
+if-goto branch.Main.main0.ELSE
+goto branch.Main.main0.IF
+label branch.Main.main0.IF
+call main.THIS 0
+pop temp 0
+goto branch.Main.main0.END
+label branch.Main.main0.ELSE
+label branch.Main.main0.END
+push constant 0
+return
+
+function Main.convert 3  
+push constant 1
+neg
+pop local 2
+label loop.Main.convert0
+push local 2
+not
+if-goto loop.Main.convert0.END
+push local 1
+push constant 1
+add
+pop local 1
+push local 0
+call Main.nextMask 1
+pop local 0
+label branch.Main.convert1.BEGIN
+push local 1
+push constant 16
+gt
+not
+not
+if-goto branch.Main.convert1.ELSE
+goto branch.Main.convert1.IF
+label branch.Main.convert1.IF
+label branch.Main.convert2.BEGIN
+push argument 0
+push local 0
+and
+push constant 0
+eq
+not
+not
+if-goto branch.Main.convert2.ELSE
+goto branch.Main.convert2.IF
+label branch.Main.convert2.IF
+push constant 8000
+push local 1
+add
+push constant 1
+call Memory.poke 2
+pop temp 0
+goto branch.Main.convert2.END
+label branch.Main.convert2.ELSE
+push constant 8000
+push local 1
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+label branch.Main.convert2.END
+goto branch.Main.convert1.END
+label branch.Main.convert1.ELSE
+push constant 0
+pop local 2
+label branch.Main.convert1.END
+goto loop.Main.convert0
+label loop.Main.convert0.END
+push constant 0
+return
+
+function Main.nextMask 0  
+label branch.Main.nextMask0.BEGIN
+push argument 0
+push constant 0
+eq
+not
+if-goto branch.Main.nextMask0.ELSE
+goto branch.Main.nextMask0.IF
+label branch.Main.nextMask0.IF
+push constant 1
+return
+goto branch.Main.nextMask0.END
+label branch.Main.nextMask0.ELSE
+push argument 0
+push constant 2
+call Math.multiply 2
+return
+label branch.Main.nextMask0.END
+
+function Main.fillMemory 0  
+label loop.Main.fillMemory0
+push argument 1
+push constant 0
+gt
+not
+if-goto loop.Main.fillMemory0.END
+push argument 0
+push argument 2
+call Memory.poke 2
+pop temp 0
+push argument 1
+push constant 1
+sub
+pop argument 1
+push argument 0
+push constant 1
+add
+pop argument 0
+goto loop.Main.fillMemory0
+label loop.Main.fillMemory0.END
+push constant 0
+return

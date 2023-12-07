@@ -34,8 +34,8 @@ namespace jcom
 		void ParseClassVar();
 		void ParseSubroutine();
 		int32_t ParseParameterList();
-		void ParseSubroutineBody();
-		void ParseSubroutineVar();
+		uint8_t ParseSubroutineBody();
+		uint8_t ParseSubroutineVar();
 		void ParseSubroutineCall(token prefix = ""); // soft rule, no headers
 
 		void ParseStatements();
@@ -63,6 +63,7 @@ namespace jcom
 
 		int32_t TablesContain(const token& name); // 0 == does not exist. non zero, subtract 1 for table index
 
+		std::streampos Write(const token& content);
 		void WriteCommand(const std::string& cmd);
 		void WriteToken();
 		void WriteTokenNext();

@@ -17,7 +17,7 @@ namespace jcom
 		{jpool::CONST,	"constant"},
 		{jpool::STATIC, "static"},
 		{jpool::TEMP,	"temp"},
-		{jpool::ARG,	"arguments"},
+		{jpool::ARG,	"argument"},
 		{jpool::LOCAL,	"local"},
 		{jpool::THIS,	"this"},
 		{jpool::POINTER,"pointer"}

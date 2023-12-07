@@ -1,6 +1,8 @@
 
 #include "jentry.h"
 
+static inline constexpr const char* FILE_EXTENSION{ "vm" };
+
 namespace jcom
 {
 	int CompileFile(const std::filesystem::path& path)
@@ -8,7 +10,7 @@ namespace jcom
 		if (path.extension() == JACK_EXTENSION)
 		{
 			std::ifstream inFile{ path.string() };
-			std::string newName{ '\\' + path.filename().replace_extension("txt").string() };
+			std::string newName{ '\\' + path.filename().replace_extension(FILE_EXTENSION).string() };
 			std::ofstream outFile{ path.parent_path().string() + newName };
 
 			jalr anl{ inFile, outFile };
