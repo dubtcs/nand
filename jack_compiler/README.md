@@ -7,11 +7,11 @@ A compiler for the JACK language.
 
 Compiler is a simple console application. Call `start jcom <filename/directory>` from inside the translator directory, and it will compile a jack program.
 
-The compiler can compile both individual files and entire directories.
+The compiler can compile both individual files and entire directories. One *.vm file is creating for each *.jack file.
 
 Two versions of the compiler are present:
  - `jcom-xml` outputs a formatted *.xml file of the supplied code.
- - `jcom` outputs a *.vm file of the supplied code that works with the JACK virtual machine. (WIP)
+ - `jcom` outputs a *.vm file of the supplied code that works with the JACK virtual machine.
 
 ## Download + Build
 
