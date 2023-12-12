@@ -7,6 +7,8 @@ An operating system for all Jack computer functions.
 
 The operating system will contain function for math, data structures, input, and display.
 
-## Usage
+You can compile these and run them on the Jack VM as helper functions.
+
+## Info
 
 This repo will contain *.jack files that operate on the virtual machine.

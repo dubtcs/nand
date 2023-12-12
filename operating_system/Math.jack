@@ -1,0 +1,193 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Math.jack
+
+/**
+ * A library of commonly used mathematical functions.
+ * Note: Jack compilers implement multiplication and division using OS method calls.
+ */
+class Math {
+
+    static Array mask;
+
+    function int exp(int x, int e)
+    {
+        var int loop;
+        var int r;
+
+        let e = e + 1;
+        let r = 1;
+        let loop = 1;
+        while(loop < e)
+        {
+            let r = r * x;
+            let loop = loop + 1;
+        }
+
+        return r;
+    }
+
+    function boolean peekbit(int index)
+    {
+        return (mask[index] = true);
+    }
+
+    function void setmask(int val)
+    {
+        let mask[0] = ((val & 1) = 1);
+        let mask[1] = ((val & 2) = 2);
+        let mask[2] = ((val & 4) = 4);
+        let mask[3] = ((val & 8) = 8);
+
+        let mask[4] = ((val & 16) = 16);
+        let mask[5] = ((val & 32) = 32);
+        let mask[6] = ((val & 64) = 64);
+        let mask[7] = ((val & 128) = 128);
+
+
+        let mask[8] = ((val & 256) = 256);
+        let mask[9] = ((val & 512) = 512);
+        let mask[10] = ((val & 1024) = 1024);
+        let mask[11] = ((val & 2048) = 2048);
+
+        let mask[12] = ((val & 4096) = 4096);
+        let mask[13] = ((val & 8192) = 8192);
+        let mask[14] = ((val & 16384) = 16384);
+        let mask[15] = ((val & (~32767)) = (~32767)); // all 1's, flip the bits
+
+        return;
+    }
+
+    /** Initializes the library. */
+    function void init() {
+        let mask = Array.new(16);
+        return;
+    }
+
+    /** Returns the absolute value of x. */
+    function int abs(int x) {
+        if(x > 0) // need to branch bc no bitwise ops :/
+        {
+            return x;
+        }
+        return (0 - x);
+    }
+
+    /** Returns the product of x and y. 
+     *  When a Jack compiler detects the multiplication operator '*' in the 
+     *  program's code, it handles it by invoking this method. In other words,
+     *  the Jack expressions x*y and multiply(x,y) return the same value.
+     */
+    function int multiply(int x, int y) {
+        var int sum;
+        var int loop;
+
+        var in xShift;
+
+        let xShift = x;
+        do Math.setmask(y);
+
+        let loop = 0;
+        while(loop < 16)
+        {
+            if(Math.peekbit(loop))
+            {
+                let sum = sum + xShift;
+            }
+            let xShift = xShift + xShift;
+            let loop = loop + 1;
+        }
+        return sum;
+    }
+
+    /** Returns the integer part of x/y.
+     *  When a Jack compiler detects the multiplication operator '/' in the 
+     *  program's code, it handles it by invoking this method. In other words,
+     *  the Jack expressions x/y and divide(x,y) return the same value.
+     */
+    function int divide(int x, int y) {
+        var int r;
+        var boolean signed;
+        if (y < 0)
+        {
+            let signed = true;
+            let y = Math.abs(y);
+        }
+        if (x < 0)
+        {
+            let signed = (~signed);
+            let x = Math.abs(x);
+        }
+
+        if((y > x) | (y < 0))
+        {
+            return 0;
+        }
+
+        let r = Math.divide(x, y + y);
+        if ((x - (2 * r * y)) < y)
+        {
+            let r = r + r;
+        } else
+        {
+            let r = (r + r) + 1;
+        }
+
+        if (signed)
+        {
+            let r = (r * (-1));
+        }
+
+        return r;
+
+    }
+
+    /** Returns the integer part of the square root of x. */
+    function int sqrt(int x) {
+        var int r;
+
+        var int loop1;
+        var int v1;
+        var int check;
+
+        let loop1 = 7;
+        while(loop1 > -1)
+        {
+            let v1 = Math.exp(2, loop1);
+            let v1 = r + v1;
+
+            let check = v1 * v1; // squared
+
+            if((check < x) | (check = x))
+            {
+                if (check > 0)
+                {
+                    let r = v1;
+                }
+            }
+
+            let loop1 = loop1 - 1;
+        }
+
+        return r;
+    }
+
+    /** Returns the greater number. */
+    function int max(int a, int b) {
+        if(a > b)
+        {
+            return a;
+        }
+        return b;
+    }
+
+    /** Returns the smaller number. */
+    function int min(int a, int b) {
+        if (a < b)
+        {
+            return a;
+        }
+        return b;
+    }
+}
