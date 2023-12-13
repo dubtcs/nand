@@ -12,3 +12,5 @@ The HACK language assembler can be found in [assembler](assembler)
 The JACK language VM translator can be found in [translator](translator)
 
 The JACK language compiler can be found in [jack_compiler](jack_compiler)
+
+The operating system can be found in [operating_system](operating_system)

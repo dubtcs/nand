@@ -1,0 +1,146 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Memory.jack
+
+/**
+ * This library provides two services: direct access to the computer's main
+ * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
+ * consists of 32,768 words, each holding a 16-bit binary number.
+ */ 
+class Memory {
+
+    static Array ram;
+    static Array heap;
+    static int pointer;
+
+    /**
+    Can store RAM as a Red-Black BST
+    but using Linked List for now just to get it working
+    **/
+
+    /** Initializes the class. */
+    function void init() {
+        let ram = 0;
+        let heap = 2048;        // base address of ram heap
+        let pointer = heap;     // Set avail to head
+        let heap[0] = 0;        // Next
+        let heap[1] = 14335;    // Size
+        return;
+    }
+
+    /** Returns the RAM value at the given address. */
+    function int peek(int address) {
+        return ram[address];
+    }
+
+    /** Sets the RAM value at the given address to the given value. */
+    function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    /** Finds an available RAM block of the given size and returns
+     *  a reference to its base address. */
+    function int alloc(int size) {
+        var int best;      // best fit
+        var int parent;    // parent of best fit
+        var int peekSize;  // current best fit
+        var int remainder; // data left after best fit
+        
+        var int prev;     // previous nav
+        var int ptr;      // current nav
+
+        var boolean seek;
+
+        let ptr = pointer;
+        let seek = true;
+        while(seek)
+        {
+            if((ptr[1] > size) | (ptr[1] = size))
+            {
+                if(ptr[1] = size)
+                {
+                    let seek = false;
+                    let best = ptr;
+                    let parent = prev;
+                }
+                else
+                {
+                    if(peekSize = 0) // no best found, set it
+                    {
+                        let best = ptr;
+                        let parent = prev;
+                        let peekSize = ptr[1];
+                    }
+                    else
+                    {
+                        if(ptr[1] < peekSize) // better than previous best
+                        {
+                            let best = ptr;
+                            let parent = prev;
+                            let peekSize = ptr[1];
+                        }
+                    }
+                }
+            }
+
+            let prev = ptr;
+            let ptr = ptr[0];
+            if(ptr < 1)
+            {
+                let seek = false;
+            }
+        }
+
+        if(best > 0) // found
+        {
+            let remainder = best[1] - size;
+            if(remainder > 2) // can fit padding and atleast 1 word
+            {
+                let best[1] = size;
+                let best[size + 2] = best[0];   // new[0]
+                let best[size + 3] = (remainder - 2); // new[1]
+                if(parent > 0)
+                {
+                    let parent[0] = (best + size + 2); // new[0]
+                }
+                else
+                {
+                    let pointer = (best + size + 2);
+                }
+            }
+            else
+            {
+                //let best[1] = size; // adjust size word
+                if(parent > 0)
+                {
+                    let parent[0] = best[0];
+                }
+                else
+                {
+                    let pointer = best[0];
+                }
+            }
+            return (best + 2); // base data address
+        }
+
+        return false;
+    }
+
+    /** De-allocates the given object (cast as an array) by making
+     *  it available for future allocations. */
+    function void deAlloc(Array o) {
+        var int temp;
+        var int loop;
+        let temp = pointer;
+        let pointer = (o - 2); // remove 2 padding
+        let pointer[0] = temp;
+        while (loop < (temp[2] + 1))
+        {
+            let temp[2 + loop] = 0;
+            let loop = loop + 1;
+        }
+        return;
+    }    
+}
