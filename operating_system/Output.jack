@@ -20,6 +20,7 @@ class Output {
     // Character map for displaying characters
     static Array charMaps;
     static int cx, cy;
+    static int ax, ay;
     static int display; // probably shouldnt do this but I want to try word methods
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
@@ -77,7 +78,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,60,102,195,195,255,195,195,195,195,0,0);          // A ** TO BE FILLED **
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -169,14 +170,12 @@ class Output {
         return;
     }
 
-    function int bitReversal(int mask)
+    // I didn't need this at all. What zero sleep does to a mf
+    function int bitReversal(int mask) // reverse the 8 bits of the mask
     {
-        var int m2;
-        let m2 = mask;
-        let mask = ((mask & (-21846)) / 2) | ((mask & 21845) * 2);
-        let mask = ((mask & (-13108)) / 4) | ((mask & 13108) * 4);
-        let mask = ((mask & (-3856)) / 16) | ((mask & 3856) * 16);
-        return ((mask / 256) | (mask * 256));
+        let mask = ((mask & (170)) / 2) | ((mask & 85) * 2);
+        let mask = ((mask & (204)) / 4) | ((mask & 51) * 4);
+        return ((mask / 16) | (mask * 16));
     }
 
     // white false, black true
@@ -184,7 +183,7 @@ class Output {
     {
         do Screen.setColor(toggle);
         do Screen.drawRectangle(cx, cy, cx + 7, cy + 10);
-        do Screen.setColor(true);
+        do Screen.setColor(false);
         return;
     }
 
@@ -224,30 +223,70 @@ class Output {
     {
         var int ty, gy;
         var int adr, mod;
-        var int mask, mask2;
-        let ty = cy;
-        let gy = cy + 10;
-        while(ty < gy)
+        var int mask;
+        let mod = Output.mod(cx, 16);
+
+        let gy = cy;
+        while(ty < 10)
         {
-            let adr = Output.getAdr(cx, ty);
-            let mod = Output.mod(cx, 16);
+            let adr = Output.getAdr(cx, gy);
 
             let mask = Output.getMap(c);
-            let mask2 = Output.bitReversal(mask);
-            if(mod = 0) // left hand side
+            let mask = mask[ty];
+
+            if(mod = 8) // right hand side
             {
-                let mask = (mask * 256) * (-1); // cccccccc00000000
+                let mask = (mask * 256); // cccccccc00000000, bc bit layout is right to left
             }
 
             do Output.fillWord(adr, mask);
             let ty = ty + 1;
+            let gy = gy + 1;
         }
+        return;
+    }
+
+    function void incCursor()
+    {
+        let ax = ax + 1;
+        if (ax > 63)
+        {
+            let ax = 0;
+            let ay = ay + 1;
+        }
+        if(ay > 22) // frame overflow, go to top
+        {
+            let ay = 0;
+            let ax = 0;
+        }
+        let cx = (ax * 8);
+        let cy = (ay * 11);
+        return;
+    }
+
+    function void decCursor()
+    {
+        let ax = ax - 1;
+        if (ax < 0)
+        {
+            let ax = 63;
+            let ay = ay - 1;
+        }
+        if(ay < 0) // frame under, stay at corner
+        {
+            let ay = 0;
+            let ax = 0;
+        }
+        let cx = (ax * 8);
+        let cy = (ay * 11);
         return;
     }
 
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        let ax = j;
+        let ay = i;
         let cx = (j * 8);
         let cy = (i * 11);
         do Output.fillChar(false);
@@ -257,33 +296,60 @@ class Output {
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
-
+        do Output.drawChar(c);
+        do Output.incCursor();
+        do Output.fillChar(false);
         return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
-
+        var int l;
+        var int i;
+        let l = s.length();
+        while (i < l)
+        {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
         return;
     }
 
+    // recursive helper function for printInt
+    function void printIntRec(int i)
+    {
+        if(i > 10)
+        {
+            do Output.printIntRec((i / 10));
+        }
+        do Output.printChar((48 + Output.mod(i, 10))); // 48 is char for 0
+        return;
+    }
+    
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
-
+        if(i < 0)
+        {
+            do Output.printChar(45); // minus
+            let i = Math.abs(i);
+        }
+        do Output.printIntRec(i);
         return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
-
+        let ax = 63;
+        do Output.incCursor();
         return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
-
+        do Output.decCursor();
+        do Output.fillChar(false);
         return;
     }
 }
