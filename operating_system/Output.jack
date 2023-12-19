@@ -224,7 +224,8 @@ class Output {
         var int ty, gy;
         var int adr, mod;
         var int mask;
-        let mod = Output.mod(cx, 16);
+        //let mod = Output.mod(cx, 16);
+        let mod = (ax & 1); // virtual cursor location, check if it's odd. No need for modulus lol
 
         let gy = cy;
         while(ty < 10)
@@ -234,7 +235,7 @@ class Output {
             let mask = Output.getMap(c);
             let mask = mask[ty];
 
-            if(mod = 8) // right hand side
+            if(mod = 1) // right hand side
             {
                 let mask = (mask * 256); // cccccccc00000000, bc bit layout is right to left
             }
